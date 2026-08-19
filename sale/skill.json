@@ -1,0 +1,3010 @@
+{
+  "skill_name": "房产SaaS-销售管理工具",
+  "version": "1.0.0",
+  "description": "房产SaaS销售管理工具，严格对照后端 real_estate_agent_saas/sale/router 路由实现，复用admin登录认证（共享cred.json）。采用结构化输出模板（对齐 admin）：查询类经 _beautify_query 渲染为 Markdown 表格；写操作遵循「缺必填→need_input 引导；齐备未确认→need_confirm 二次确认；confirmed=True→执行并经 _beautify_mutation 美化」的三段式交互；登录拆分为 sale_login（引导/确认）+ sale_login_confirm（执行），登出带二次确认。覆盖楼盘销控、客户管理、认购签约交易、分销渠道与佣金、销售业绩与考核、数据统计报表六大业务域，共计 105 个工具。确认交互规范：所有 need_confirm 二次确认一律用 feishu_ask_user_question 发选项卡片（确认执行/取消），详见 docs/07_确认交互卡片化.md。",
+  "permissions": [
+    "http_request",
+    "file_read",
+    "file_write"
+  ],
+  "tools": [
+    {
+      "tool_name": "sale_login",
+      "description": "销售端登录引导（分步交互，复用admin登录端点、凭证写入共享cred.json）。已登录则友好提示；未提供账号/密码时返回 action=need_login 引导输入；账号密码齐全时返回 action=need_confirm（密码脱敏）请与用户二次确认，确认后调用 sale_login_confirm 完成登录。account、password 均可选。",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "string",
+          "description": "登录账号（可选，缺省时触发引导输入）"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "description": "登录密码（可选，缺省时触发引导输入）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_login_confirm",
+      "description": "在 sale_login 引导并经用户确认后，执行真正登录并自动保存 access_token/refresh_token，返回美观的登录成功/失败提示",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "string",
+          "description": "登录账号（可选，缺省时触发引导输入）"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "description": "登录密码（可选，缺省时触发引导输入）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_logout",
+      "description": "销售端登出（带二次确认）。confirmed=False 时返回 action=need_confirm 请确认；确认后以 confirmed=true 再次调用才会调用后端登出接口并清除本地共享凭证。",
+      "parameters": [
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_refresh_token",
+      "description": "自动刷新access_token，无需传入参数",
+      "parameters": []
+    },
+    {
+      "tool_name": "sale_change_password",
+      "description": "修改当前登录账号密码",
+      "parameters": [
+        {
+          "name": "old_password",
+          "type": "string",
+          "description": "原始旧密码"
+        },
+        {
+          "name": "new_password",
+          "type": "string",
+          "description": "设置的新密码"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_get_login_user",
+      "description": "查询当前登录用户信息",
+      "parameters": []
+    },
+    {
+      "tool_name": "sale_project_create",
+      "description": "创建楼盘（POST /api/sale/project/create）",
+      "parameters": [
+        {
+          "name": "project_code",
+          "type": "string",
+          "description": "楼盘编码（必填）"
+        },
+        {
+          "name": "project_name",
+          "type": "string",
+          "description": "楼盘名称（必填）"
+        },
+        {
+          "name": "developer",
+          "type": "string",
+          "description": "开发商（必填）"
+        },
+        {
+          "name": "region",
+          "type": "string",
+          "description": "region（参数）"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "description": "详细地址（必填）"
+        },
+        {
+          "name": "sale_status",
+          "type": "integer",
+          "description": "sale_status（参数）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "status（参数）"
+        },
+        {
+          "name": "start_date",
+          "type": "string",
+          "description": "start_date（参数）"
+        },
+        {
+          "name": "total_area",
+          "type": "number",
+          "description": "total_area（参数）"
+        },
+        {
+          "name": "total_buildings",
+          "type": "integer",
+          "description": "total_buildings（参数）"
+        },
+        {
+          "name": "total_houses",
+          "type": "integer",
+          "description": "total_houses（参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_list",
+      "description": "分页查询楼盘列表（GET /api/sale/project/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_name",
+          "type": "string",
+          "description": "楼盘名称（可选，用于搜索）"
+        },
+        {
+          "name": "project_status",
+          "type": "integer",
+          "description": "项目状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_detail",
+      "description": "查询楼盘详情（GET /api/sale/project/detail/{project_id}）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_update",
+      "description": "更新楼盘（PUT /api/sale/project/update/{project_id}）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID"
+        },
+        {
+          "name": "project_name",
+          "type": "string",
+          "description": "楼盘名称（可选）"
+        },
+        {
+          "name": "developer",
+          "type": "string",
+          "description": "开发商（可选）"
+        },
+        {
+          "name": "region",
+          "type": "string",
+          "description": "region（参数）"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "description": "详细地址（可选）"
+        },
+        {
+          "name": "sale_status",
+          "type": "integer",
+          "description": "sale_status（参数）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "status（参数）"
+        },
+        {
+          "name": "start_date",
+          "type": "string",
+          "description": "start_date（参数）"
+        },
+        {
+          "name": "total_area",
+          "type": "number",
+          "description": "total_area（参数）"
+        },
+        {
+          "name": "total_buildings",
+          "type": "integer",
+          "description": "total_buildings（参数）"
+        },
+        {
+          "name": "total_houses",
+          "type": "integer",
+          "description": "total_houses（参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_delete",
+      "description": "删除楼盘（DELETE /api/sale/project/delete/{project_id}）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_building_create",
+      "description": "创建楼栋（POST /api/sale/project/building/create）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "building_code",
+          "type": "string",
+          "description": "楼栋编码（必填）"
+        },
+        {
+          "name": "building_name",
+          "type": "string",
+          "description": "楼栋名称（必填）"
+        },
+        {
+          "name": "total_floors",
+          "type": "integer",
+          "description": "total_floors（参数）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "status（参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_building_list",
+      "description": "分页查询楼栋列表（GET /api/sale/project/building/list）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_building_update",
+      "description": "更新楼栋（PUT /api/sale/project/building/update/{building_id}）",
+      "parameters": [
+        {
+          "name": "building_id",
+          "type": "integer",
+          "description": "楼栋ID"
+        },
+        {
+          "name": "building_name",
+          "type": "string",
+          "description": "楼栋名称（可选）"
+        },
+        {
+          "name": "total_floors",
+          "type": "integer",
+          "description": "total_floors（参数）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "status（参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_unit_create",
+      "description": "创建单元（POST /api/sale/project/unit/create）",
+      "parameters": [
+        {
+          "name": "building_id",
+          "type": "integer",
+          "description": "楼栋ID（必填）"
+        },
+        {
+          "name": "unit_code",
+          "type": "string",
+          "description": "单元编码（必填）"
+        },
+        {
+          "name": "unit_name",
+          "type": "string",
+          "description": "单元名称（必填）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "status（参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_unit_list",
+      "description": "分页查询单元列表（GET /api/sale/project/unit/list）",
+      "parameters": [
+        {
+          "name": "building_id",
+          "type": "integer",
+          "description": "楼栋ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_unit_detail",
+      "description": "查询单元详情（GET /api/sale/project/unit/detail/{unit_id}）",
+      "parameters": [
+        {
+          "name": "unit_id",
+          "type": "integer",
+          "description": "单元ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_unit_update",
+      "description": "更新单元（PUT /api/sale/project/unit/update/{unit_id}）",
+      "parameters": [
+        {
+          "name": "unit_id",
+          "type": "integer",
+          "description": "单元ID"
+        },
+        {
+          "name": "unit_name",
+          "type": "string",
+          "description": "单元名称（可选）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "status（参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_create",
+      "description": "创建房源（POST /api/sale/project/house/create）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "building_id",
+          "type": "integer",
+          "description": "楼栋ID（必填）"
+        },
+        {
+          "name": "house_code",
+          "type": "string",
+          "description": "房源编码（必填）"
+        },
+        {
+          "name": "house_name",
+          "type": "string",
+          "description": "房源名称（必填）"
+        },
+        {
+          "name": "floor",
+          "type": "integer",
+          "description": "楼层（必填）"
+        },
+        {
+          "name": "room_type",
+          "type": "string",
+          "description": "户型（必填，如3室2厅1卫）"
+        },
+        {
+          "name": "building_area",
+          "type": "number",
+          "description": "建筑面积㎡（必填）"
+        },
+        {
+          "name": "unit_price",
+          "type": "number",
+          "description": "unit_price（参数）"
+        },
+        {
+          "name": "unit_id",
+          "type": "integer",
+          "description": "单元ID（可选）"
+        },
+        {
+          "name": "usage_area",
+          "type": "number",
+          "description": "usage_area（参数）"
+        },
+        {
+          "name": "total_price",
+          "type": "number",
+          "description": "总价元（可选）"
+        },
+        {
+          "name": "house_status",
+          "type": "integer",
+          "description": "房源状态：1-可售 2-已售 3-锁定 4-预定 5-停售（默认1，可选）"
+        },
+        {
+          "name": "orientation",
+          "type": "string",
+          "description": "朝向（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_list",
+      "description": "分页查询房源列表（GET /api/sale/project/house/list）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "building_id",
+          "type": "integer",
+          "description": "楼栋ID（可选）"
+        },
+        {
+          "name": "unit_id",
+          "type": "integer",
+          "description": "单元ID（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_detail",
+      "description": "查询房源详情（GET /api/sale/project/house/detail/{house_id}）",
+      "parameters": [
+        {
+          "name": "house_id",
+          "type": "integer",
+          "description": "房源ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_update",
+      "description": "更新房源（PUT /api/sale/project/house/update/{house_id}）",
+      "parameters": [
+        {
+          "name": "house_id",
+          "type": "integer",
+          "description": "房源ID"
+        },
+        {
+          "name": "house_name",
+          "type": "string",
+          "description": "房源名称（可选）"
+        },
+        {
+          "name": "unit_price",
+          "type": "number",
+          "description": "unit_price（参数）"
+        },
+        {
+          "name": "total_price",
+          "type": "number",
+          "description": "总价元（可选）"
+        },
+        {
+          "name": "house_status",
+          "type": "integer",
+          "description": "房源状态（可选）"
+        },
+        {
+          "name": "orientation",
+          "type": "string",
+          "description": "朝向（可选）"
+        },
+        {
+          "name": "usage_area",
+          "type": "number",
+          "description": "usage_area（参数）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_lock",
+      "description": "锁定房源（POST /api/sale/project/house/lock，参数走query）",
+      "parameters": [
+        {
+          "name": "house_id",
+          "type": "integer",
+          "description": "房源ID（必填）"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（必填）"
+        },
+        {
+          "name": "expire_minutes",
+          "type": "integer",
+          "description": "过期时间分钟（默认30）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_unlock",
+      "description": "解锁房源（POST /api/sale/project/house/unlock，参数走query）",
+      "parameters": [
+        {
+          "name": "house_id",
+          "type": "integer",
+          "description": "房源ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_house_control",
+      "description": "获取销控面板（GET /api/sale/project/house/control/{project_id}）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_rule_create",
+      "description": "创建项目规则（POST /api/sale/project/rule/create）",
+      "parameters": [
+        {
+          "name": "rule_key",
+          "type": "string",
+          "description": "规则键（必填）：visit_protect_days(到访保护期天数)/report_protect_days(报备保护期天数)"
+        },
+        {
+          "name": "rule_value",
+          "type": "integer",
+          "description": "规则值天数（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（为空表示全局规则，可选）"
+        },
+        {
+          "name": "rule_desc",
+          "type": "string",
+          "description": "规则描述（可选）"
+        },
+        {
+          "name": "rule_status",
+          "type": "integer",
+          "description": "规则状态：1-启用 2-停用（默认1，可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_rule_list",
+      "description": "分页查询项目规则列表（GET /api/sale/project/rule/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "rule_key",
+          "type": "string",
+          "description": "规则键（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_rule_detail",
+      "description": "查询项目规则详情（GET /api/sale/project/rule/detail/{rule_id}）",
+      "parameters": [
+        {
+          "name": "rule_id",
+          "type": "integer",
+          "description": "规则ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_rule_update",
+      "description": "更新项目规则（PUT /api/sale/project/rule/update/{rule_id}）",
+      "parameters": [
+        {
+          "name": "rule_id",
+          "type": "integer",
+          "description": "规则ID"
+        },
+        {
+          "name": "rule_value",
+          "type": "integer",
+          "description": "规则值天数（可选）"
+        },
+        {
+          "name": "rule_desc",
+          "type": "string",
+          "description": "规则描述（可选）"
+        },
+        {
+          "name": "rule_status",
+          "type": "integer",
+          "description": "规则状态：1-启用 2-停用（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_rule_delete",
+      "description": "删除项目规则（DELETE /api/sale/project/rule/delete/{rule_id}）",
+      "parameters": [
+        {
+          "name": "rule_id",
+          "type": "integer",
+          "description": "规则ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_project_rule_get_value",
+      "description": "获取规则值（GET /api/sale/project/rule/get-value，参数走query）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "rule_key",
+          "type": "string",
+          "description": "规则键（必填）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_customer_create",
+      "description": "创建客户（POST /api/sale/customer/create，多body参数嵌套为{customer_data,tags,demands}）",
+      "parameters": [
+        {
+          "name": "customer_name",
+          "type": "string",
+          "description": "客户姓名（必填）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "手机号（必填）"
+        },
+        {
+          "name": "gender",
+          "type": "integer",
+          "description": "性别：1-男 2-女 3-未知（默认1，可选）"
+        },
+        {
+          "name": "id_card",
+          "type": "string",
+          "description": "身份证号（可选）"
+        },
+        {
+          "name": "customer_status",
+          "type": "integer",
+          "description": "客户状态：1-潜客 2-意向 3-认购 4-签约 5-成交 6-无效（默认1，可选）"
+        },
+        {
+          "name": "customer_source",
+          "type": "string",
+          "description": "客户来源（默认自然到访，可选）"
+        },
+        {
+          "name": "belong_user_id",
+          "type": "integer",
+          "description": "归属销售ID（可选）"
+        },
+        {
+          "name": "tags",
+          "type": "array",
+          "description": "标签列表（可选）"
+        },
+        {
+          "name": "demands",
+          "type": "array",
+          "description": "购房需求列表（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_customer_list",
+      "description": "分页查询客户列表（GET /api/sale/customer/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "customer_name",
+          "type": "string",
+          "description": "客户姓名（可选，用于搜索）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "手机号（可选，用于搜索）"
+        },
+        {
+          "name": "customer_status",
+          "type": "integer",
+          "description": "客户状态（可选）"
+        },
+        {
+          "name": "belong_user_id",
+          "type": "integer",
+          "description": "归属销售ID（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_customer_detail",
+      "description": "查询客户详情（GET /api/sale/customer/detail/{customer_id}）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_customer_update",
+      "description": "更新客户（PUT /api/sale/customer/update/{customer_id}）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID"
+        },
+        {
+          "name": "customer_name",
+          "type": "string",
+          "description": "客户姓名（可选）"
+        },
+        {
+          "name": "gender",
+          "type": "integer",
+          "description": "性别（可选）"
+        },
+        {
+          "name": "id_card",
+          "type": "string",
+          "description": "身份证号（可选）"
+        },
+        {
+          "name": "customer_status",
+          "type": "integer",
+          "description": "客户状态（可选）"
+        },
+        {
+          "name": "customer_source",
+          "type": "string",
+          "description": "客户来源（可选）"
+        },
+        {
+          "name": "belong_user_id",
+          "type": "integer",
+          "description": "归属销售ID（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_customer_delete",
+      "description": "删除客户（DELETE /api/sale/customer/delete/{customer_id}）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_customer_transfer",
+      "description": "转移客户归属（POST /api/sale/customer/transfer，参数走query）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（必填）"
+        },
+        {
+          "name": "target_user_id",
+          "type": "integer",
+          "description": "目标销售ID（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_report_create",
+      "description": "创建报备（POST /api/sale/customer/report/create）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "customer_name",
+          "type": "string",
+          "description": "customer_name（参数）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "mobile（参数）"
+        },
+        {
+          "name": "report_time",
+          "type": "string",
+          "description": "报备时间（可选）"
+        },
+        {
+          "name": "broker_id",
+          "type": "integer",
+          "description": "经纪人ID（可选）"
+        },
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道公司ID（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_report_list",
+      "description": "分页查询报备列表（GET /api/sale/customer/report/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（可选）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_visit_confirm",
+      "description": "确认到访（POST /api/sale/customer/visit/confirm/{report_id}）",
+      "parameters": [
+        {
+          "name": "report_id",
+          "type": "integer",
+          "description": "报备ID（必填，路径参数）"
+        },
+        {
+          "name": "visit_time",
+          "type": "string",
+          "description": "到访时间（必填）"
+        },
+        {
+          "name": "visit_type",
+          "type": "string",
+          "description": "到访类型（首次到访/再次到访，默认首次到访，可选）"
+        },
+        {
+          "name": "receive_user_id",
+          "type": "integer",
+          "description": "接待销售ID（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_visit_list",
+      "description": "分页查询到访列表（GET /api/sale/customer/visit/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（可选）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_follow_create",
+      "description": "创建跟进记录（POST /api/sale/customer/follow/create）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（必填）"
+        },
+        {
+          "name": "follow_method",
+          "type": "string",
+          "description": "follow_method（参数）"
+        },
+        {
+          "name": "follow_content",
+          "type": "string",
+          "description": "跟进内容（必填）"
+        },
+        {
+          "name": "follow_time",
+          "type": "string",
+          "description": "跟进时间（必填）"
+        },
+        {
+          "name": "customer_intention",
+          "type": "string",
+          "description": "customer_intention（参数）"
+        },
+        {
+          "name": "next_follow_time",
+          "type": "string",
+          "description": "下次跟进时间（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_follow_list",
+      "description": "分页查询跟进记录列表（GET /api/sale/customer/follow/list）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sea_add",
+      "description": "添加客户到公海（POST /api/sale/customer/sea/add，参数走query）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sea_pick",
+      "description": "从公海认领客户（POST /api/sale/customer/sea/pick，参数走query）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sea_list",
+      "description": "分页查询公海客户列表（GET /api/sale/customer/sea/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_subscribe_create",
+      "description": "创建认购单（POST /api/sale/transaction/subscribe/create）",
+      "parameters": [
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（必填）"
+        },
+        {
+          "name": "house_id",
+          "type": "integer",
+          "description": "房源ID（必填）"
+        },
+        {
+          "name": "subscribe_amount",
+          "type": "number",
+          "description": "认购金额（必填）"
+        },
+        {
+          "name": "deposit_amount",
+          "type": "number",
+          "description": "定金金额（必填）"
+        },
+        {
+          "name": "discount_amount",
+          "type": "number",
+          "description": "优惠金额（默认0，可选）"
+        },
+        {
+          "name": "subscribe_date",
+          "type": "string",
+          "description": "认购日期（可选）"
+        },
+        {
+          "name": "sign_user_id",
+          "type": "integer",
+          "description": "签约人ID（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_subscribe_list",
+      "description": "分页查询认购单列表（GET /api/sale/transaction/subscribe/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（可选）"
+        },
+        {
+          "name": "subscribe_status",
+          "type": "integer",
+          "description": "认购状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_subscribe_detail",
+      "description": "查询认购单详情（GET /api/sale/transaction/subscribe/detail/{subscribe_id}）",
+      "parameters": [
+        {
+          "name": "subscribe_id",
+          "type": "integer",
+          "description": "认购ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_subscribe_update",
+      "description": "更新认购单（PUT /api/sale/transaction/subscribe/update/{subscribe_id}）",
+      "parameters": [
+        {
+          "name": "subscribe_id",
+          "type": "integer",
+          "description": "认购ID"
+        },
+        {
+          "name": "subscribe_amount",
+          "type": "number",
+          "description": "认购金额（可选）"
+        },
+        {
+          "name": "deposit_amount",
+          "type": "number",
+          "description": "定金金额（可选）"
+        },
+        {
+          "name": "discount_amount",
+          "type": "number",
+          "description": "优惠金额（可选）"
+        },
+        {
+          "name": "sign_user_id",
+          "type": "integer",
+          "description": "签约人ID（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_subscribe_cancel",
+      "description": "取消认购单（POST /api/sale/transaction/subscribe/cancel/{subscribe_id}，cancel_reason走query）",
+      "parameters": [
+        {
+          "name": "subscribe_id",
+          "type": "integer",
+          "description": "认购ID（必填，路径参数）"
+        },
+        {
+          "name": "cancel_reason",
+          "type": "string",
+          "description": "取消原因（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_contract_create",
+      "description": "创建签约合同（POST /api/sale/transaction/contract/create/{subscribe_id}）",
+      "parameters": [
+        {
+          "name": "subscribe_id",
+          "type": "integer",
+          "description": "认购单ID（必填，路径参数）"
+        },
+        {
+          "name": "contract_no",
+          "type": "string",
+          "description": "合同编号（必填）"
+        },
+        {
+          "name": "contract_amount",
+          "type": "number",
+          "description": "签约金额（必填）"
+        },
+        {
+          "name": "contract_date",
+          "type": "string",
+          "description": "签约日期（必填）"
+        },
+        {
+          "name": "sale_user_id",
+          "type": "integer",
+          "description": "销售ID（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_contract_list",
+      "description": "分页查询签约合同列表（GET /api/sale/transaction/contract/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer",
+          "description": "客户ID（可选）"
+        },
+        {
+          "name": "contract_status",
+          "type": "integer",
+          "description": "合同状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_contract_detail",
+      "description": "查询签约合同详情（GET /api/sale/transaction/contract/detail/{contract_id}）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_contract_update",
+      "description": "更新签约合同（PUT /api/sale/transaction/contract/update/{contract_id}）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID"
+        },
+        {
+          "name": "contract_amount",
+          "type": "number",
+          "description": "签约金额（可选）"
+        },
+        {
+          "name": "contract_date",
+          "type": "string",
+          "description": "签约日期（可选）"
+        },
+        {
+          "name": "sale_user_id",
+          "type": "integer",
+          "description": "销售ID（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_contract_record",
+      "description": "合同备案（POST /api/sale/transaction/contract/record/{contract_id}，record_date走query）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填，路径参数）"
+        },
+        {
+          "name": "record_date",
+          "type": "string",
+          "description": "备案日期（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_payment_create",
+      "description": "创建回款记录（POST /api/sale/transaction/payment/create）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填）"
+        },
+        {
+          "name": "payment_type",
+          "type": "string",
+          "description": "回款类型（必填：首付/按揭/尾款）"
+        },
+        {
+          "name": "payment_amount",
+          "type": "number",
+          "description": "回款金额（必填）"
+        },
+        {
+          "name": "payment_date",
+          "type": "string",
+          "description": "payment_date（参数）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_payment_list",
+      "description": "分页查询回款记录列表（GET /api/sale/transaction/payment/list）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_payment_update",
+      "description": "更新回款记录（PUT /api/sale/transaction/payment/update/{payment_id}）",
+      "parameters": [
+        {
+          "name": "payment_id",
+          "type": "integer",
+          "description": "回款ID"
+        },
+        {
+          "name": "payment_type",
+          "type": "string",
+          "description": "回款类型（可选）"
+        },
+        {
+          "name": "payment_amount",
+          "type": "number",
+          "description": "回款金额（可选）"
+        },
+        {
+          "name": "payment_date",
+          "type": "string",
+          "description": "payment_date（参数）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_payment_confirm",
+      "description": "确认回款（POST /api/sale/transaction/payment/confirm/{payment_id}）",
+      "parameters": [
+        {
+          "name": "payment_id",
+          "type": "integer",
+          "description": "回款ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_loan_create",
+      "description": "创建贷款记录（POST /api/sale/transaction/loan/create）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填）"
+        },
+        {
+          "name": "loan_bank",
+          "type": "string",
+          "description": "贷款银行（必填）"
+        },
+        {
+          "name": "loan_amount",
+          "type": "number",
+          "description": "贷款金额（必填）"
+        },
+        {
+          "name": "loan_rate",
+          "type": "number",
+          "description": "贷款利率%（可选）"
+        },
+        {
+          "name": "loan_period",
+          "type": "integer",
+          "description": "loan_period（参数）"
+        },
+        {
+          "name": "loan_type",
+          "type": "string",
+          "description": "贷款类型（商业贷款/公积金贷款/组合贷款，默认商业贷款，可选）"
+        },
+        {
+          "name": "loan_status",
+          "type": "integer",
+          "description": "贷款状态：1-申请中 2-已批贷 3-已放款 4-已结清（默认1，可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_loan_list",
+      "description": "分页查询贷款记录列表（GET /api/sale/transaction/loan/list）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_loan_update",
+      "description": "更新贷款记录（PUT /api/sale/transaction/loan/update/{loan_id}）",
+      "parameters": [
+        {
+          "name": "loan_id",
+          "type": "integer",
+          "description": "贷款ID"
+        },
+        {
+          "name": "loan_bank",
+          "type": "string",
+          "description": "贷款银行（可选）"
+        },
+        {
+          "name": "loan_amount",
+          "type": "number",
+          "description": "贷款金额（可选）"
+        },
+        {
+          "name": "loan_rate",
+          "type": "number",
+          "description": "贷款利率（可选）"
+        },
+        {
+          "name": "loan_period",
+          "type": "integer",
+          "description": "loan_period（参数）"
+        },
+        {
+          "name": "loan_type",
+          "type": "string",
+          "description": "贷款类型（可选）"
+        },
+        {
+          "name": "loan_status",
+          "type": "integer",
+          "description": "贷款状态（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_receipt_create",
+      "description": "创建发票记录（POST /api/sale/transaction/receipt/create）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填）"
+        },
+        {
+          "name": "receipt_type",
+          "type": "string",
+          "description": "发票类型（必填：普通发票/专用发票）"
+        },
+        {
+          "name": "receipt_amount",
+          "type": "number",
+          "description": "发票金额（必填）"
+        },
+        {
+          "name": "receipt_status",
+          "type": "integer",
+          "description": "发票状态：1-待开票 2-已开票 3-已作废（默认1，可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_receipt_list",
+      "description": "分页查询发票记录列表（GET /api/sale/transaction/receipt/list）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（必填）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_receipt_update",
+      "description": "更新发票记录（PUT /api/sale/transaction/receipt/update/{receipt_id}）",
+      "parameters": [
+        {
+          "name": "receipt_id",
+          "type": "integer",
+          "description": "发票ID"
+        },
+        {
+          "name": "receipt_type",
+          "type": "string",
+          "description": "发票类型（可选）"
+        },
+        {
+          "name": "receipt_amount",
+          "type": "number",
+          "description": "发票金额（可选）"
+        },
+        {
+          "name": "receipt_status",
+          "type": "integer",
+          "description": "发票状态（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_receipt_status_update",
+      "description": "更新发票状态（PUT /api/sale/transaction/receipt/status/{receipt_id}，new_status走query）",
+      "parameters": [
+        {
+          "name": "receipt_id",
+          "type": "integer",
+          "description": "发票ID（必填，路径参数）"
+        },
+        {
+          "name": "new_status",
+          "type": "integer",
+          "description": "新状态（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_transaction_list",
+      "description": "获取交易综合列表（GET /api/sale/transaction/transaction/list，分页走query，filters走body）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "filters",
+          "type": "object",
+          "description": "过滤条件（可选，dict，作为body透传）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_channel_create",
+      "description": "创建渠道公司（POST /api/sale/commission/channel/create）",
+      "parameters": [
+        {
+          "name": "channel_code",
+          "type": "string",
+          "description": "渠道编码（必填）"
+        },
+        {
+          "name": "channel_name",
+          "type": "string",
+          "description": "渠道名称（必填）"
+        },
+        {
+          "name": "contact_person",
+          "type": "string",
+          "description": "联系人（必填）"
+        },
+        {
+          "name": "contact_mobile",
+          "type": "string",
+          "description": "联系电话（必填）"
+        },
+        {
+          "name": "channel_level",
+          "type": "string",
+          "description": "渠道等级（默认一级渠道，可选）"
+        },
+        {
+          "name": "province",
+          "type": "string",
+          "description": "省份（可选）"
+        },
+        {
+          "name": "city",
+          "type": "string",
+          "description": "城市（可选）"
+        },
+        {
+          "name": "district",
+          "type": "string",
+          "description": "区县（可选）"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "description": "详细地址（可选）"
+        },
+        {
+          "name": "start_date",
+          "type": "string",
+          "description": "合作开始日期（可选）"
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "description": "合作结束日期（可选）"
+        },
+        {
+          "name": "cooperation_status",
+          "type": "integer",
+          "description": "合作状态：1-合作中 2-已终止（默认1，可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_channel_list",
+      "description": "分页查询渠道公司列表（GET /api/sale/commission/channel/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "channel_name",
+          "type": "string",
+          "description": "渠道名称（可选，用于搜索）"
+        },
+        {
+          "name": "cooperation_status",
+          "type": "integer",
+          "description": "合作状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_channel_detail",
+      "description": "查询渠道公司详情（GET /api/sale/commission/channel/detail/{channel_id}）",
+      "parameters": [
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_channel_update",
+      "description": "更新渠道公司（PUT /api/sale/commission/channel/update/{channel_id}）",
+      "parameters": [
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道ID"
+        },
+        {
+          "name": "channel_name",
+          "type": "string",
+          "description": "渠道名称（可选）"
+        },
+        {
+          "name": "contact_person",
+          "type": "string",
+          "description": "联系人（可选）"
+        },
+        {
+          "name": "contact_mobile",
+          "type": "string",
+          "description": "联系电话（可选）"
+        },
+        {
+          "name": "channel_level",
+          "type": "string",
+          "description": "渠道等级（可选）"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "description": "详细地址（可选）"
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "description": "合作结束日期（可选）"
+        },
+        {
+          "name": "cooperation_status",
+          "type": "integer",
+          "description": "合作状态（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_channel_terminate",
+      "description": "终止合作（POST /api/sale/commission/channel/terminate/{channel_id}）",
+      "parameters": [
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道ID"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_broker_create",
+      "description": "创建经纪人（POST /api/sale/commission/broker/create）",
+      "parameters": [
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道公司ID（必填）"
+        },
+        {
+          "name": "broker_code",
+          "type": "string",
+          "description": "经纪人编码（必填）"
+        },
+        {
+          "name": "broker_name",
+          "type": "string",
+          "description": "经纪人姓名（必填）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "手机号（必填）"
+        },
+        {
+          "name": "id_card",
+          "type": "string",
+          "description": "身份证号（可选）"
+        },
+        {
+          "name": "gender",
+          "type": "integer",
+          "description": "性别：1-男 2-女（默认1，可选）"
+        },
+        {
+          "name": "broker_level",
+          "type": "string",
+          "description": "经纪人等级（默认普通经纪人，可选）"
+        },
+        {
+          "name": "commission_rate",
+          "type": "number",
+          "description": "佣金比例%（可选）"
+        },
+        {
+          "name": "work_status",
+          "type": "integer",
+          "description": "工作状态：1-在职 2-离职（默认1，可选）"
+        },
+        {
+          "name": "entry_date",
+          "type": "string",
+          "description": "入职日期（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_broker_list",
+      "description": "分页查询经纪人列表（GET /api/sale/commission/broker/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "broker_name",
+          "type": "string",
+          "description": "经纪人姓名（可选，用于搜索）"
+        },
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道ID（可选）"
+        },
+        {
+          "name": "work_status",
+          "type": "integer",
+          "description": "工作状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_broker_detail",
+      "description": "查询经纪人详情（GET /api/sale/commission/broker/detail/{broker_id}）",
+      "parameters": [
+        {
+          "name": "broker_id",
+          "type": "integer",
+          "description": "经纪人ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_broker_update",
+      "description": "更新经纪人（PUT /api/sale/commission/broker/update/{broker_id}）",
+      "parameters": [
+        {
+          "name": "broker_id",
+          "type": "integer",
+          "description": "经纪人ID"
+        },
+        {
+          "name": "broker_name",
+          "type": "string",
+          "description": "经纪人姓名（可选）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "手机号（可选）"
+        },
+        {
+          "name": "id_card",
+          "type": "string",
+          "description": "身份证号（可选）"
+        },
+        {
+          "name": "gender",
+          "type": "integer",
+          "description": "性别（可选）"
+        },
+        {
+          "name": "broker_level",
+          "type": "string",
+          "description": "经纪人等级（可选）"
+        },
+        {
+          "name": "commission_rate",
+          "type": "number",
+          "description": "佣金比例%（可选）"
+        },
+        {
+          "name": "work_status",
+          "type": "integer",
+          "description": "工作状态（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_commission_rule_create",
+      "description": "创建佣金规则（POST /api/sale/commission/rule/create，字段均可选，由后端按project_id是否为空判定全局/楼盘专属）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（为空表示全局规则，可选）"
+        },
+        {
+          "name": "room_type",
+          "type": "string",
+          "description": "适用户型（可选）"
+        },
+        {
+          "name": "commission_rate",
+          "type": "number",
+          "description": "佣金比例%（可选）"
+        },
+        {
+          "name": "commission_amount",
+          "type": "number",
+          "description": "固定佣金金额元（可选）"
+        },
+        {
+          "name": "rule_level",
+          "type": "integer",
+          "description": "规则优先级（数字越大优先级越高，默认1，可选）"
+        },
+        {
+          "name": "rule_status",
+          "type": "integer",
+          "description": "规则状态：1-启用 2-停用（默认1，可选）"
+        },
+        {
+          "name": "effective_date",
+          "type": "string",
+          "description": "生效日期（可选）"
+        },
+        {
+          "name": "expire_date",
+          "type": "string",
+          "description": "失效日期（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_commission_rule_list",
+      "description": "分页查询佣金规则列表（GET /api/sale/commission/rule/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "rule_type",
+          "type": "string",
+          "description": "规则类型（可选）"
+        },
+        {
+          "name": "rule_status",
+          "type": "integer",
+          "description": "规则状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_commission_rule_update",
+      "description": "更新佣金规则（PUT /api/sale/commission/rule/update/{rule_id}）",
+      "parameters": [
+        {
+          "name": "rule_id",
+          "type": "integer",
+          "description": "规则ID"
+        },
+        {
+          "name": "room_type",
+          "type": "string",
+          "description": "适用户型（可选）"
+        },
+        {
+          "name": "commission_rate",
+          "type": "number",
+          "description": "佣金比例%（可选）"
+        },
+        {
+          "name": "commission_amount",
+          "type": "number",
+          "description": "固定佣金金额元（可选）"
+        },
+        {
+          "name": "rule_level",
+          "type": "integer",
+          "description": "规则优先级（可选）"
+        },
+        {
+          "name": "rule_status",
+          "type": "integer",
+          "description": "规则状态（可选）"
+        },
+        {
+          "name": "effective_date",
+          "type": "string",
+          "description": "生效日期（可选）"
+        },
+        {
+          "name": "expire_date",
+          "type": "string",
+          "description": "失效日期（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_bill_generate",
+      "description": "生成佣金结算单（POST /api/sale/commission/bill/generate/{contract_id}）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（路径参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_bill_list",
+      "description": "分页查询佣金结算单列表（GET /api/sale/commission/bill/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道ID（可选）"
+        },
+        {
+          "name": "broker_id",
+          "type": "integer",
+          "description": "经纪人ID（可选）"
+        },
+        {
+          "name": "bill_status",
+          "type": "integer",
+          "description": "结算状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_bill_audit",
+      "description": "审核佣金结算单（POST /api/sale/commission/bill/audit/{bill_id}）",
+      "parameters": [
+        {
+          "name": "bill_id",
+          "type": "integer",
+          "description": "结算单ID（路径参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_bill_freeze",
+      "description": "冻结佣金结算单（POST /api/sale/commission/bill/freeze/{bill_id}，freeze_reason走query）",
+      "parameters": [
+        {
+          "name": "bill_id",
+          "type": "integer",
+          "description": "结算单ID（必填，路径参数）"
+        },
+        {
+          "name": "freeze_reason",
+          "type": "string",
+          "description": "冻结原因（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_team_create",
+      "description": "创建销售团队（POST /api/sale/performance/team/create）",
+      "parameters": [
+        {
+          "name": "team_code",
+          "type": "string",
+          "description": "团队编码（必填）"
+        },
+        {
+          "name": "team_name",
+          "type": "string",
+          "description": "团队名称（必填）"
+        },
+        {
+          "name": "parent_team_id",
+          "type": "integer",
+          "description": "父团队ID（可选）"
+        },
+        {
+          "name": "leader_id",
+          "type": "integer",
+          "description": "团队负责人ID（可选）"
+        },
+        {
+          "name": "team_level",
+          "type": "integer",
+          "description": "团队层级（默认1，可选）"
+        },
+        {
+          "name": "team_status",
+          "type": "integer",
+          "description": "团队状态：1-正常 2-冻结 3-解散（默认1，可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_team_list",
+      "description": "分页查询销售团队列表（GET /api/sale/performance/team/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "team_name",
+          "type": "string",
+          "description": "团队名称（可选，用于搜索）"
+        },
+        {
+          "name": "team_level",
+          "type": "integer",
+          "description": "团队层级（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_team_detail",
+      "description": "查询销售团队详情（GET /api/sale/performance/team/detail/{team_id}）",
+      "parameters": [
+        {
+          "name": "team_id",
+          "type": "integer",
+          "description": "团队ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_team_update",
+      "description": "更新销售团队（PUT /api/sale/performance/team/update/{team_id}）",
+      "parameters": [
+        {
+          "name": "team_id",
+          "type": "integer",
+          "description": "团队ID"
+        },
+        {
+          "name": "team_name",
+          "type": "string",
+          "description": "团队名称（可选）"
+        },
+        {
+          "name": "leader_id",
+          "type": "integer",
+          "description": "团队负责人ID（可选）"
+        },
+        {
+          "name": "team_status",
+          "type": "integer",
+          "description": "团队状态（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_team_dissolve",
+      "description": "解散销售团队（POST /api/sale/performance/team/dissolve/{team_id}）",
+      "parameters": [
+        {
+          "name": "team_id",
+          "type": "integer",
+          "description": "团队ID（路径参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_team_member_add",
+      "description": "添加团队成员（POST /api/sale/performance/team/member/add，body为{team_id,user_id,member_role}）",
+      "parameters": [
+        {
+          "name": "team_id",
+          "type": "integer",
+          "description": "团队ID（必填）"
+        },
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "member_role",
+          "type": "string",
+          "description": "成员角色：leader-负责人 member-普通成员（默认member，可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_target_create",
+      "description": "创建业绩目标（POST /api/sale/performance/target/create）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "target_type",
+          "type": "string",
+          "description": "目标类型（必填：个人/团队）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（必填：年/季/月/周/日/自定义）"
+        },
+        {
+          "name": "target_amount",
+          "type": "number",
+          "description": "目标金额（必填）"
+        },
+        {
+          "name": "target_user_id",
+          "type": "integer",
+          "description": "目标用户ID（个人目标时必填，可选）"
+        },
+        {
+          "name": "target_team_id",
+          "type": "integer",
+          "description": "目标团队ID（团队目标时必填，可选）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（如2025-09、2025-Q1，可选）"
+        },
+        {
+          "name": "target_sets",
+          "type": "integer",
+          "description": "目标套数（可选）"
+        },
+        {
+          "name": "target_status",
+          "type": "integer",
+          "description": "目标状态：1-进行中 2-已完成 3-已作废（默认1，可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_target_list",
+      "description": "分页查询业绩目标列表（GET /api/sale/performance/target/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "target_type",
+          "type": "string",
+          "description": "目标类型（可选）"
+        },
+        {
+          "name": "target_status",
+          "type": "integer",
+          "description": "目标状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_target_update",
+      "description": "更新业绩目标（PUT /api/sale/performance/target/update/{target_id}）",
+      "parameters": [
+        {
+          "name": "target_id",
+          "type": "integer",
+          "description": "目标ID"
+        },
+        {
+          "name": "target_amount",
+          "type": "number",
+          "description": "目标金额（可选）"
+        },
+        {
+          "name": "target_sets",
+          "type": "integer",
+          "description": "目标套数（可选）"
+        },
+        {
+          "name": "target_status",
+          "type": "integer",
+          "description": "目标状态（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_performance_personal",
+      "description": "获取个人销售业绩（GET /api/sale/performance/personal，参数走query）",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（默认month）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_performance_team",
+      "description": "获取团队销售业绩（GET /api/sale/performance/team，参数走query）",
+      "parameters": [
+        {
+          "name": "team_id",
+          "type": "integer",
+          "description": "团队ID（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（默认month）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sales_commission_calculate",
+      "description": "计算销售提成（POST /api/sale/performance/sales/commission/calculate/{contract_id}）",
+      "parameters": [
+        {
+          "name": "contract_id",
+          "type": "integer",
+          "description": "合同ID（路径参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sales_commission_list",
+      "description": "分页查询销售提成列表（GET /api/sale/performance/sales/commission/list）",
+      "parameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "description": "每页数量（默认20）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（可选）"
+        },
+        {
+          "name": "sale_user_id",
+          "type": "integer",
+          "description": "销售ID（可选）"
+        },
+        {
+          "name": "commission_status",
+          "type": "integer",
+          "description": "提成状态（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sales_commission_audit",
+      "description": "审核销售提成（POST /api/sale/performance/sales/commission/audit/{commission_id}）",
+      "parameters": [
+        {
+          "name": "commission_id",
+          "type": "integer",
+          "description": "提成ID（路径参数）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_sales_commission_freeze",
+      "description": "冻结销售提成（POST /api/sale/performance/sales/commission/freeze/{commission_id}，freeze_reason走query）",
+      "parameters": [
+        {
+          "name": "commission_id",
+          "type": "integer",
+          "description": "提成ID（必填，路径参数）"
+        },
+        {
+          "name": "freeze_reason",
+          "type": "string",
+          "description": "冻结原因（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正操作"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_statistics_overview",
+      "description": "获取项目总览统计-首页大屏（GET /api/sale/statistics/overview/{project_id}）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（路径参数）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_statistics_project",
+      "description": "获取项目维度统计（GET /api/sale/statistics/project，参数走query）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（默认month）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_statistics_personal",
+      "description": "获取个人维度统计（GET /api/sale/statistics/personal，参数走query）",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（默认month）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_statistics_team",
+      "description": "获取团队维度统计（GET /api/sale/statistics/team，参数走query）",
+      "parameters": [
+        {
+          "name": "team_id",
+          "type": "integer",
+          "description": "团队ID（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（默认month）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_statistics_channel",
+      "description": "获取渠道维度统计（GET /api/sale/statistics/channel，参数走query）",
+      "parameters": [
+        {
+          "name": "channel_id",
+          "type": "integer",
+          "description": "渠道ID（必填）"
+        },
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "time_type",
+          "type": "string",
+          "description": "时间类型（默认month）"
+        },
+        {
+          "name": "time_value",
+          "type": "string",
+          "description": "时间值（可选）"
+        }
+      ]
+    },
+    {
+      "tool_name": "sale_statistics_custom",
+      "description": "获取自定义时段统计（GET /api/sale/statistics/custom，参数走query）",
+      "parameters": [
+        {
+          "name": "project_id",
+          "type": "integer",
+          "description": "楼盘ID（必填）"
+        },
+        {
+          "name": "start_date",
+          "type": "string",
+          "description": "开始日期 YYYY-MM-DD（必填）"
+        },
+        {
+          "name": "end_date",
+          "type": "string",
+          "description": "结束日期 YYYY-MM-DD（必填）"
+        }
+      ]
+    }
+  ]
+}

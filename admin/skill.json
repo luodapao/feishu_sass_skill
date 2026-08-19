@@ -1,0 +1,423 @@
+{
+  "skill_name": "房产SaaS-租户管理工具",
+  "version": "1.0.0",
+  "description": "房产SaaS租户管理工具，包含租户用户登录、登出、令牌刷新、修改密码、租户用户管理、角色管理等功能，租户管理员使用。确认交互规范：所有 need_confirm 二次确认一律用 feishu_ask_user_question 发选项卡片（确认执行/取消），详见 docs/07_确认交互卡片化.md",
+  "permissions": [
+    "http_request",
+    "file_read",
+    "file_write"
+  ],
+  "tools": [
+    {
+      "tool_name": "tenant_login",
+      "description": "租户用户登录（一次登录）。已登录则友好提示；未提供账号/密码时返回 action=need_login 附飞书登录表单卡片，用户提交后直接完成登录并自动保存 access_token、refresh_token。account、password 均可选。",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "string",
+          "description": "登录账号（可选，缺省时触发引导输入）"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "description": "登录密码（可选，缺省时触发引导输入）"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_logout",
+      "description": "租户用户登出（带二次确认）。confirmed=False 时返回 action=need_confirm；【交互约定】确认环节用 feishu_ask_user_question 发选项卡片（✅确认退出/❌取消），用户点选后答案回传 Agent，按答案以 confirmed=true 再次调用才会执行登出并清除本地凭证。",
+      "parameters": [
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户通过选项卡片点选「✅确认退出」后，Agent 解析确认再以 confirmed=true 执行真正登出"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_refresh_token",
+      "description": "自动刷新access_token，无需传入参数",
+      "parameters": []
+    },
+    {
+      "tool_name": "tenant_change_password",
+      "description": "修改当前登录账号密码。未提供旧密码/新密码时返回 action=need_input 附飞书输入表单卡片，用户填写后提交回调触发 tenant_change_password 完成修改。",
+      "parameters": [
+        {
+          "name": "old_password",
+          "type": "string",
+          "description": "原始旧密码（可选，缺省时触发卡片输入）"
+        },
+        {
+          "name": "new_password",
+          "type": "string",
+          "description": "设置的新密码（可选，缺省时触发卡片输入）"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_get_login_user",
+      "description": "查询当前登录用户信息",
+      "parameters": []
+    },
+    {
+      "tool_name": "tenant_create_user",
+      "description": "创建租户用户（仅租户管理员，飞书卡片交互）。缺少 account/name/password 时返回 action=need_input 附飞书输入表单卡片；参数齐备但 confirmed=False 时返回 action=need_confirm 附飞书确认卡片（密码脱敏）；用户点选确认后以 confirmed=true 再次调用才真正创建。",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "string",
+          "description": "登录账号（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "用户姓名（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "description": "登录密码（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "手机号（可选）"
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "description": "邮箱（可选）"
+        },
+        {
+          "name": "avatar",
+          "type": "string",
+          "description": "头像（可选）"
+        },
+        {
+          "name": "dept_id",
+          "type": "integer",
+          "description": "部门ID（可选）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "状态：1-正常，2-禁用，3-锁定，4-待审核（默认1）"
+        },
+        {
+          "name": "user_type",
+          "type": "integer",
+          "description": "用户类型：1-内部用户，2-分销渠道后台管理员、3-外部经纪人（默认1）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正创建"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_get_user_list",
+      "description": "分页查询租户用户列表（仅租户管理员）。返回 action=query_result 附飞书展示卡片（turquoise 头部 + Markdown 表格 + 分页信息），可直接展示给用户。",
+      "parameters": [
+        {
+          "name": "user_name",
+          "type": "string",
+          "description": "用户姓名（可选，用于搜索）"
+        },
+        {
+          "name": "login_name",
+          "type": "string",
+          "description": "登录账号（可选，用于搜索）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "状态（可选）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "size",
+          "type": "integer",
+          "description": "每页数量（默认10）"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_get_user",
+      "description": "查询租户用户详情（仅租户管理员）。返回 action=query_result 附飞书展示卡片（turquoise 头部 + 键值对双栏回显），可直接展示给用户。",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_update_user",
+      "description": "更新租户用户（仅租户管理员，飞书卡片交互）。缺 user_id 时返回 action=need_input 引导；confirmed=False 时先查询当前用户信息并返回 action=need_confirm 附飞书可编辑表单卡片（字段预填当前值）；用户修改后以 confirmed=true 再次调用才真正更新。",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "用户姓名（可选）"
+        },
+        {
+          "name": "mobile",
+          "type": "string",
+          "description": "手机号（可选）"
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "description": "邮箱（可选）"
+        },
+        {
+          "name": "avatar",
+          "type": "string",
+          "description": "头像（可选）"
+        },
+        {
+          "name": "dept_id",
+          "type": "integer",
+          "description": "部门ID（可选）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "状态（可选）"
+        },
+        {
+          "name": "user_type",
+          "type": "integer",
+          "description": "用户类型（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回改动摘要确认提示；用户确认后传true执行真正更新"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_delete_user",
+      "description": "删除租户用户（仅租户管理员，高危操作，结构化交互）。缺 user_id 时返回 action=need_input；confirmed=False 时返回 action=need_confirm（🗑️ 不可恢复提示）请与用户确认；确认后以 confirmed=true 再次调用才真正删除。",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回删除确认提示；用户确认后传true执行真正删除"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_reset_user_password",
+      "description": "重置租户用户密码（仅租户管理员，结构化交互）。缺 user_id/new_password 时返回 action=need_input；confirmed=False 时返回 action=need_confirm（新密码脱敏）请与用户确认；确认后以 confirmed=true 再次调用才真正重置。",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "new_password",
+          "type": "string",
+          "description": "新密码（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正重置"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_unlock_user",
+      "description": "解锁租户用户（仅租户管理员，结构化交互）。缺 user_id 时返回 action=need_input；confirmed=False 时返回 action=need_confirm 请与用户确认；确认后以 confirmed=true 再次调用才真正解锁。",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正解锁"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_grant_user_role",
+      "description": "给租户用户分配角色（仅租户管理员，结构化交互）。缺 user_id/role_ids 时返回 action=need_input；confirmed=False 时返回 action=need_confirm 展示待分配角色请用户确认；确认后以 confirmed=true 再次调用才真正分配。",
+      "parameters": [
+        {
+          "name": "user_id",
+          "type": "integer",
+          "description": "用户ID（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "role_ids",
+          "type": "array",
+          "description": "角色ID列表（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正分配"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_create_role",
+      "description": "创建角色（仅租户管理员，结构化交互）。缺 role_name/role_code 时返回 action=need_input 引导补充；参数齐备但 confirmed=False 时返回 action=need_confirm 请与用户确认；确认后以 confirmed=true 再次调用才真正创建。",
+      "parameters": [
+        {
+          "name": "role_name",
+          "type": "string",
+          "description": "角色名称（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "role_code",
+          "type": "string",
+          "description": "角色编码（必填，缺省时触发引导输入）"
+        },
+        {
+          "name": "role_type",
+          "type": "integer",
+          "description": "角色类型：1-系统角色，2-自定义角色（默认1）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "状态：1-正常，2-禁用（默认1）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回确认提示；用户确认后传true执行真正创建"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_get_role_list",
+      "description": "分页查询角色列表。返回 action=query_result，message 为渲染好的 Markdown 表格（含分页信息），可直接展示给用户。",
+      "parameters": [
+        {
+          "name": "role_name",
+          "type": "string",
+          "description": "角色名称（可选，用于搜索）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "状态（可选）"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "description": "页码（默认1）"
+        },
+        {
+          "name": "size",
+          "type": "integer",
+          "description": "每页数量（默认10）"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_get_role",
+      "description": "查询角色详情。返回 action=query_result，message 为渲染好的 键/值 Markdown 表格，可直接展示给用户。",
+      "parameters": [
+        {
+          "name": "role_id",
+          "type": "integer",
+          "description": "角色ID"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_update_role",
+      "description": "更新角色（仅租户管理员，结构化交互）。缺 role_id 或未提供任何修改字段时返回 action=need_input；有改动但 confirmed=False 时返回 action=need_confirm 展示改动摘要请用户确认；确认后以 confirmed=true 再次调用才真正更新。",
+      "parameters": [
+        {
+          "name": "role_id",
+          "type": "integer",
+          "description": "角色ID（必填）"
+        },
+        {
+          "name": "role_name",
+          "type": "string",
+          "description": "角色名称（可选）"
+        },
+        {
+          "name": "role_code",
+          "type": "string",
+          "description": "角色编码（可选）"
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": "状态（可选）"
+        },
+        {
+          "name": "remark",
+          "type": "string",
+          "description": "备注（可选）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回改动摘要确认提示；用户确认后传true执行真正更新"
+        }
+      ]
+    },
+    {
+      "tool_name": "tenant_delete_role",
+      "description": "删除角色（仅租户管理员，高危操作，结构化交互）。缺 role_id 时返回 action=need_input；confirmed=False 时返回 action=need_confirm（🗑️ 不可恢复提示）请与用户确认；确认后以 confirmed=true 再次调用才真正删除。",
+      "parameters": [
+        {
+          "name": "role_id",
+          "type": "integer",
+          "description": "角色ID（必填）"
+        },
+        {
+          "name": "confirmed",
+          "type": "boolean",
+          "description": "是否已获得用户确认。默认false先返回删除确认提示；用户确认后传true执行真正删除"
+        }
+      ]
+    }
+  ]
+}
