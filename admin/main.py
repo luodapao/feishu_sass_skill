@@ -910,7 +910,8 @@ def _user_table_card(rows, meta=None, title="租户用户列表"):
                     cells.append(str(v).replace("|", "\\|").replace("\n", " "))
             body_lines.append("| " + " | ".join(cells) + " |")
         else:
-            body_lines.append(f"| {str(row).replace('|', '\\|')} |")
+            _row_safe = str(row).replace("|", "\\|")
+            body_lines.append(f"| {_row_safe} |")
 
     table_md = "\n".join(body_lines)
     footer = ""
@@ -1490,7 +1491,8 @@ def _role_table_card(rows, meta=None, title="角色列表"):
             cells = [_role_fmt_val(c, row.get(c)).replace("|", "\\|").replace("\n", " ") for c in cols]
             body_lines.append("| " + " | ".join(cells) + " |")
         else:
-            body_lines.append(f"| {str(row).replace('|', '\\|')} |")
+            _row_safe = str(row).replace("|", "\\|")
+            body_lines.append(f"| {_row_safe} |")
     table_md = "\n".join(body_lines)
     footer = ""
     if len(rows) > 20:
