@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/feishu_sass_skill
-Environment=SAAS_SKILL_ROOT=/opt/feishu_sass_skill
+WorkingDirectory=/mcp/feishu_sass_skill
+Environment=SAAS_SKILL_ROOT=/mcp/feishu_sass_skill
 Environment=MCP_PORT=8082
-ExecStart=/opt/feishu_sass_skill/.venv/bin/python /opt/feishu_sass_skill/mcp_sale_http.py
+ExecStart=/mcp/feishu_sass_skill/.venv/bin/python /mcp/feishu_sass_skill/mcp_sale_http.py
 Restart=on-failure
 RestartSec=5
 

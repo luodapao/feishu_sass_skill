@@ -1,7 +1,7 @@
 # ============================================================
 # MCP Server systemd 部署模板
-# 安装目录：/opt/feishu_sass_skill
-# Python venv：/opt/feishu_sass_skill/.venv
+# 安装目录：/mcp/feishu_sass_skill
+# Python venv：/mcp/feishu_sass_skill/.venv
 # 使用：
 #   sudo cp deploy/*.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
@@ -16,11 +16,11 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/feishu_sass_skill
+WorkingDirectory=/mcp/feishu_sass_skill
 # 房产 SaaS 后端在同服务器内网，默认 BASE_URL=http://192.168.0.79:8000 不用改
-Environment=SAAS_SKILL_ROOT=/opt/feishu_sass_skill
+Environment=SAAS_SKILL_ROOT=/mcp/feishu_sass_skill
 Environment=MCP_PORT=8081
-ExecStart=/opt/feishu_sass_skill/.venv/bin/python /opt/feishu_sass_skill/mcp_admin_http.py
+ExecStart=/mcp/feishu_sass_skill/.venv/bin/python /mcp/feishu_sass_skill/mcp_admin_http.py
 Restart=on-failure
 RestartSec=5
 # 安全：以非 root 运行（推荐先创建 mcp 用户）
