@@ -1,5 +1,6 @@
 # MCP 核心库（含 Streamable HTTP / SSE 模式）
-mcp[http]>=1.2.0
+# 注意：mcp 2.0 引入重大破坏性变更，生产环境锁定 v1.x
+mcp[http]>=1.24.0,<2
 
 # HTTP SSE 服务器（ASGI 运行器）
 uvicorn[standard]>=0.23.2
