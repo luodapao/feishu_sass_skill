@@ -17,6 +17,9 @@ cred.json
 # 备份文件
 *.bak
 
+# 临时日志
+_pip_log.txt
+
 # IDE
 .vscode/
 .idea/
