@@ -136,9 +136,18 @@ def build_fastmcp_server(module_name, skill_json_path, server_name):
     tools_spec = skill.get("tools", [])
 
     # 创建 FastMCP 实例
+    # transport_security 配置：
+    #   - enable_dns_rebinding_protection=False 关闭 DNS 重绑定保护
+    #     （MCP SDK 1.29 默认开启，会校验 Host 头白名单导致公网/内网 IP 访问返回 421 Misdirected Request）
+    #   - host="0.0.0.0" 监听所有网卡
+    from mcp.server.streamable_http import TransportSecuritySettings
     mcp = FastMCP(
         name=server_name,
         instructions=skill.get("description", ""),
+        host="0.0.0.0",
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=False,
+        ),
     )
 
     # 动态注册每个工具
@@ -197,13 +206,8 @@ def run_http_server(
     mcp = build_fastmcp_server(module_name, skill_json_path, server_name)
 
     # 获取 Starlette ASGI app（Streamable HTTP 模式）
+    # Host 校验已在 build_fastmcp_server 中通过 transport_security 配置关闭
     app = mcp.streamable_http_app()
-
-    # 放行 Host 头：Starlette 默认只允许 localhost，公网/内网 IP 访问会被拒。
-    # 这里包一层 TrustedHostMiddleware 允许任意 Host，避免飞书 Agent 配置
-    # http://公网IP:8081/mcp 时被 400 Bad Request 拒绝。
-    from starlette.middleware.trustedhost import TrustedHostMiddleware
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
     # 用 uvicorn 启动
     try:
