@@ -1,75 +1,90 @@
 """
-auth_core.py —— 共享认证内核
+auth_core.py —— 共享认证内核（无状态版）
 
-抽取自 admin(main.py) 的凭证管理 / 认证请求 / token 刷新 / 登录登出改密逻辑，
-采用中性命名（不带 tenant_ 前缀），供 sale 等技能复用。
+设计要点（v2.0 无状态改造）：
+- 不再落盘 token。凭证由调用方（飞书 AI Agent）在对话上下文中持有，
+  每次调用工具时通过 access_token / refresh_token 参数传入。
+- mcp_adapter 在派发工具前，把 access_token / refresh_token 从参数中 pop 出来，
+  通过 set_auth_context 注入本模块的请求级上下文；调用结束 clear_auth_context。
+- admin / sale / finance 三端业务函数签名不变，仍调用本模块的
+  authenticated_request / do_login / do_logout 等，内部从上下文取 token。
+- 多用户天然隔离：每个飞书用户各自持有自己的 token，服务器无共享状态。
 
-设计要点：
-- AUTH_FILE 解析为「项目根」绝对路径，确保 admin / sale / finance 无论从哪个 cwd 运行，
-  都指向同一个 cred.json，落地「共用登录、凭证共享」语义。
-- admin / sale / finance 三端均复用本模块认证逻辑，不再各自内联，消除重复。
+成功码约定：
+- 后端成功返回 code=0，失败返回 code=5000；
+- 本模块对外（业务函数）统一用 code=200 表示成功，code=5000 表示失败/未登录；
+- token 过期返回 code=401 + action=token_expired，提示调用方刷新令牌后重试。
 """
-import os
-import json
 import requests
 from config import (
-    BASE_URL, AUTH_FILE, API_LOGIN, API_LOGOUT, API_REFRESH_TOKEN,
-    API_CHANGE_PASSWORD
+    BASE_URL, API_LOGIN, API_LOGOUT, API_REFRESH_TOKEN, API_CHANGE_PASSWORD
 )
 
-# 项目根（auth_core.py 所在目录）
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-# 凭证文件解析为根绝对路径，避免受 cwd 影响
-AUTH_FILE_ABS = os.path.normpath(os.path.join(PROJECT_ROOT, AUTH_FILE))
-AUTH_DIR_ABS = os.path.dirname(AUTH_FILE_ABS)
+__version__ = "2.0.0"
 
-# 确保存储文件夹自动创建
-if not os.path.exists(AUTH_DIR_ABS):
-    os.makedirs(AUTH_DIR_ABS, exist_ok=True)
+# 复用连接的 Session（轻微优化：减少重复 TCP 握手）
+_session = requests.Session()
 
-
-# ===================== 凭证文件读写通用方法 =====================
-def save_cred(access_token: str, refresh_token: str, user_info: dict):
-    """保存token信息到本地文件"""
-    data = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "user_info": user_info
-    }
-    with open(AUTH_FILE_ABS, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+# 请求级上下文：由 mcp_adapter 在每次工具调用前 set、调用后 clear。
+# stdio MCP 单进程顺序处理请求，模块级变量即可；如未来切换 HTTP 并发，
+# 可改为 threading.local()。
+_auth_context = {"access_token": None, "refresh_token": None}
 
 
+def set_auth_context(access_token=None, refresh_token=None):
+    """设置当前请求的认证上下文（由 mcp_adapter 在派发工具前调用）。"""
+    _auth_context["access_token"] = access_token
+    _auth_context["refresh_token"] = refresh_token
+
+
+def clear_auth_context():
+    """清除当前请求的认证上下文（由 mcp_adapter 在工具调用后调用）。"""
+    _auth_context["access_token"] = None
+    _auth_context["refresh_token"] = None
+
+
+# ===================== 兼容旧接口（供 admin/sale 业务函数过渡使用）=====================
 def load_cred():
-    """读取本地凭证，未登录返回None"""
-    if not os.path.exists(AUTH_FILE_ABS):
+    """
+    兼容旧接口：从当前上下文返回凭证。
+    无状态模式下 user_info 不可用（仅返回 token），调用方如需 user_info 字段
+    （如 tenant_id）应通过工具参数显式传入。
+    """
+    access_token = _auth_context.get("access_token")
+    if not access_token:
         return None
-    try:
-        with open(AUTH_FILE_ABS, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return None
+    return {
+        "access_token": access_token,
+        "refresh_token": _auth_context.get("refresh_token"),
+        "user_info": {}
+    }
 
 
 def clear_cred():
-    """清空本地凭证文件（登出使用）"""
-    if os.path.exists(AUTH_FILE_ABS):
-        os.remove(AUTH_FILE_ABS)
+    """兼容旧接口：无状态模式下无文件可删，仅清当前上下文。"""
+    clear_auth_context()
 
 
+# ===================== 认证请求 =====================
 def get_auth_headers():
-    """获取认证请求头"""
-    cred = load_cred()
-    if not cred or not cred.get("access_token"):
+    """获取认证请求头（从当前上下文取 access_token）"""
+    access_token = _auth_context.get("access_token")
+    if not access_token:
         return None
     return {
-        "Authorization": f"Bearer {cred['access_token']}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
 
 
 def authenticated_request(method: str, url: str, **kwargs):
-    """带认证的请求，自动处理token刷新，统一返回格式"""
+    """
+    带认证的请求，统一返回格式。
+
+    token 过期时不再自动刷新（无状态模式下 refresh_token 由调用方持有），
+    而是返回 code=401 + action=token_expired，提示调用方先调用
+    refresh_token 工具刷新令牌，再用新 token 重试原请求。
+    """
     headers = kwargs.pop("headers", {})
     auth_headers = get_auth_headers()
     if not auth_headers:
@@ -77,25 +92,17 @@ def authenticated_request(method: str, url: str, **kwargs):
     headers.update(auth_headers)
     kwargs["headers"] = headers
 
-    resp = requests.request(method, url, timeout=15, **kwargs)
+    resp = _session.request(method, url, timeout=15, **kwargs)
     res = resp.json()
 
     # 后端对未登录/无权限返回 code=5000 + "系统内部错误"
     if res.get("code") == 5000 and res.get("message") in ("系统内部错误", "未登录"):
-        refresh_result = do_refresh_token()
-        if refresh_result.get("code") == 200:
-            new_auth_headers = get_auth_headers()
-            if new_auth_headers:
-                headers.update(new_auth_headers)
-                kwargs["headers"] = headers
-                try:
-                    resp = requests.request(method, url, timeout=15, **kwargs)
-                    res = resp.json()
-                except Exception:
-                    return {"code": 5000, "message": "请求失败，请重试", "data": None}
-        else:
-            clear_cred()
-            return {"code": 5000, "message": "登录已失效，请重新登录", "data": None}
+        return {
+            "code": 401,
+            "message": "访问令牌已过期或无效，请调用 refresh_token 工具刷新后重试",
+            "action": "token_expired",
+            "data": None
+        }
 
     return res
 
@@ -103,7 +110,10 @@ def authenticated_request(method: str, url: str, **kwargs):
 # ===================== 认证接口 =====================
 def do_login(account: str, password: str):
     """
-    登录（租户管理员和普通用户通用），登录成功自动持久化token
+    登录（租户管理员和普通用户通用）。
+    无状态模式：不落盘 token，而是把 access_token / refresh_token / user_info
+    放进响应 data 返回给调用方，由飞书 Agent 在对话上下文中持有。
+
     :param account: 登录账号
     :param password: 登录密码
     """
@@ -112,7 +122,7 @@ def do_login(account: str, password: str):
         "account": account,
         "password": password
     }
-    resp = requests.post(url, json=payload, timeout=15)
+    resp = _session.post(url, json=payload, timeout=15)
     res = resp.json()
     # 后端成功返回 code=0，失败返回 code=5000
     if res.get("code") != 0:
@@ -122,65 +132,75 @@ def do_login(account: str, password: str):
     access_token = data["access_token"]
     refresh_token = data["refresh_token"]
     user_info = data.get("user", {})
-    save_cred(access_token, refresh_token, user_info)
     return {
         "code": 200,
-        "message": "登录成功，凭证已保存",
-        "data": {"user_info": user_info}
+        "message": "登录成功，请在后续工具调用中携带 access_token",
+        "data": {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user_info": user_info
+        }
     }
 
 
 def do_logout():
-    """登出：调用后端登出接口 + 删除本地凭证"""
-    cred = load_cred()
-    if not cred or not cred.get("access_token"):
-        clear_cred()
-        return {"code": 200, "message": "本地无登录凭证，已清除", "data": None}
+    """
+    登出：使用当前上下文的 access_token 调用后端登出接口。
+    无状态模式下不删除本地文件（本来就没有），仅调用后端销毁 token。
+    """
+    access_token = _auth_context.get("access_token")
+    if not access_token:
+        return {"code": 200, "message": "当前无登录凭证", "data": None}
 
     headers = {
-        "Authorization": f"Bearer {cred['access_token']}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
     url = f"{BASE_URL}{API_LOGOUT}"
     try:
-        requests.post(url, headers=headers, timeout=10)
+        _session.post(url, headers=headers, timeout=10)
     except Exception:
         pass
-    clear_cred()
-    return {"code": 200, "message": "已完成登出，凭证清除", "data": None}
+    return {"code": 200, "message": "已完成登出，请丢弃本地保存的 access_token / refresh_token", "data": None}
 
 
 def do_refresh_token():
-    """使用refresh_token刷新access_token，自动更新本地文件"""
-    cred = load_cred()
-    if not cred or not cred.get("refresh_token"):
-        return {"code": 5000, "message": "无有效refresh_token，请重新登录", "data": None}
+    """
+    使用当前上下文的 refresh_token 刷新 access_token。
+    无状态模式：不落盘，把新的 access_token / refresh_token 放进响应 data 返回，
+    调用方（飞书 Agent）需用新 token 替换旧 token 后重试原请求。
+    """
+    refresh_token = _auth_context.get("refresh_token")
+    if not refresh_token:
+        return {"code": 5000, "message": "无有效 refresh_token，请重新登录", "data": None}
 
     url = f"{BASE_URL}{API_REFRESH_TOKEN}"
     payload = {
-        "refresh_token": cred["refresh_token"]
+        "refresh_token": refresh_token
     }
-    resp = requests.post(url, json=payload, timeout=15)
+    resp = _session.post(url, json=payload, timeout=15)
     res = resp.json()
     # 后端成功返回 code=0，失败返回 code=5000
     if res.get("code") != 0:
-        clear_cred()
         return {"code": 5000, "message": "刷新令牌失效，请重新登录", "data": None}
 
     data = res["data"]
-    # 优先使用后端返回的新 refresh_token，如果没提供则保留旧的
-    new_refresh_token = data.get("refresh_token", cred["refresh_token"])
-    save_cred(
-        access_token=data["access_token"],
-        refresh_token=new_refresh_token,
-        user_info=cred["user_info"]
-    )
-    return {"code": 200, "message": "令牌刷新成功", "data": None}
+    new_refresh_token = data.get("refresh_token", refresh_token)
+    return {
+        "code": 200,
+        "message": "令牌刷新成功，请在后续调用中使用新的 access_token",
+        "data": {
+            "access_token": data["access_token"],
+            "refresh_token": new_refresh_token
+        }
+    }
 
 
 def do_change_password(old_password: str, new_password: str):
     """
-    修改当前登录账号密码
+    修改当前登录账号密码。
+    成功后旧 token 失效，调用方需重新登录。
+
     :param old_password: 原始旧密码
     :param new_password: 设置的新密码
     """
@@ -193,21 +213,23 @@ def do_change_password(old_password: str, new_password: str):
 
     # 后端成功返回 code=0，失败返回 code=5000
     if res.get("code") == 0:
-        clear_cred()
-        return {"code": 200, "message": "密码修改成功，请重新登录", "data": None}
+        return {"code": 200, "message": "密码修改成功，请重新登录获取新 token", "data": None}
     return res
 
 
 def get_login_user():
-    """获取当前登录用户信息"""
-    cred = load_cred()
-    if not cred:
+    """
+    查询当前登录状态。
+    无状态模式下 user_info 已在 login 响应中返回给调用方，
+    此处仅返回当前上下文 token 有效性，调用方可从对话上下文获取用户详情。
+    """
+    access_token = _auth_context.get("access_token")
+    if not access_token:
         return {"code": 5000, "message": "暂未登录", "data": None}
     return {
         "code": 200,
-        "message": "查询成功",
+        "message": "当前已登录，用户详情请参考登录响应中的 user_info",
         "data": {
-            "user_info": cred["user_info"],
-            "has_valid_token": bool(cred.get("access_token"))
+            "has_valid_token": True
         }
     }

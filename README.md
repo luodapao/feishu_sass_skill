@@ -8,8 +8,8 @@
 ```
 saas_tenant_skill-master/
 ├── README.md            # 本文件（总览入口）
-├── auth_core.py         # 共享认证内核（凭证读写 / 认证请求 / token刷新 / 登录登出改密）
-├── config.py            # 根配置（BASE_URL / AUTH_FILE / 认证接口路径）
+├── auth_core.py         # 共享认证内核（无状态：请求级上下文 / 认证请求 / token刷新 / 登录登出改密）
+├── config.py            # 根配置（BASE_URL / 认证接口路径）
 ├── main.py              # admin 技能入口
 ├── skill.json           # admin 技能清单
 ├── docs/
@@ -29,7 +29,7 @@ saas_tenant_skill-master/
 │   ├── main.py          # finance 技能实现（finance_* 系列）
 │   ├── skill.json       # finance 工具清单
 │   └── ...
-├── saas_tenant_auth/    # 本地凭证存储（cred.json，三端共享）
+├── saas_tenant_auth/    # （已废弃）旧版本地凭证存储目录，无状态模式下不再使用
 ├── test_results/        # 测试报告 / 缺陷清单
 └── test_framework.py    # 测试框架
 ```
@@ -41,7 +41,6 @@ saas_tenant_skill-master/
 | [docs/07_确认交互卡片化.md](docs/07_确认交互卡片化.md) | **确认交互规范**：所有 `need_confirm` 二次确认一律用 `feishu_ask_user_question` 发选项卡片（7.1-7.4 完整规范） |
 | [sale/README.md](sale/README.md) | sale 技能定位、后端对接、请求构造规则、104 工具清单、自检脚本 |
 | [finance/README.md](finance/README.md) | finance 技能说明 |
-| [test_results/11_后端缺陷与优化清单.md](test_results/11_后端缺陷与优化清单.md) | 后端缺陷与优化清单 |
 
 ## 本次变更（2026-08-14）
 
@@ -59,7 +58,21 @@ saas_tenant_skill-master/
 ### 未改动
 - `finance/skill.json` — 无 `need_confirm` 机制（不含写确认），不涉及
 - 所有技能 `main.py` 业务逻辑 — 三段式 confirmed 机制保持不变
-- `auth_core.py` / `config.py` — 未改动
+
+---
+
+## 无状态认证改造（2026-08-21）
+
+### 背景
+MCP 部署到云服务器后，原文件持久化 cred.json 会导致多用户 token 串号。
+
+### 改动
+- **`auth_core.py` v2.0** — 删除文件 I/O（save/load/clear_cred），改为请求级上下文（`set_auth_context` / `clear_auth_context`）。`do_login` 把 access_token/refresh_token 放进响应 data 返回给调用方；token 过期返回 `code=401 + action=token_expired` 提示刷新
+- **`mcp_adapter.py`** — `call_tool` 派发前从参数 pop `access_token`/`refresh_token` 注入上下文，调用结束清理
+- **`config.py`** — 删除 `AUTH_DIR` / `AUTH_FILE` / 目录自动创建
+- **3 个 skill.json** — 所有非 login 工具加 `access_token` 参数（required）；refresh_token 工具加 `refresh_token` 参数；`tenant_create_user` 加 `tenant_id` 参数
+- **`admin/main.py`** — `tenant_create_user` 增加 `tenant_id` 显式参数
+- 业务函数签名不变（200+ 函数零改动）
 
 ### 验证
 - 三个 skill.json（admin / sale / finance）均通过 JSON 合法性校验 ✅

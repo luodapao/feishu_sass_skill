@@ -788,7 +788,8 @@ def _create_user_confirm_card(account, name, password, mobile, email, status, us
 def tenant_create_user(account: str = None, name: str = None, password: str = None,
                        mobile: str = "", email: str = "", avatar: str = "",
                        dept_id: int = None, status: int = 1,
-                       user_type: int = 1, remark: str = "", confirmed: bool = False):
+                       user_type: int = 1, remark: str = "", confirmed: bool = False,
+                       tenant_id: int = None):
     """
     创建租户用户（仅租户管理员）—— 飞书卡片交互：缺必填→表单卡片；齐备未确认→确认卡片；confirmed=True→执行。
     :param account: 登录账号（必填）
@@ -802,6 +803,7 @@ def tenant_create_user(account: str = None, name: str = None, password: str = No
     :param user_type: 用户类型：1-内部用户，2-分销渠道后台管理员、3-外部经纪人（默认1）
     :param remark: 备注（可选）
     :param confirmed: 是否已获用户确认（默认False先返回确认卡片）
+    :param tenant_id: 租户ID（无状态模式下需显式传入，登录响应 user_info.tenant_id 中获取）
     """
     missing = [f for f, v in (("account", account), ("name", name), ("password", password)) if not v]
     if missing:
@@ -835,8 +837,10 @@ def tenant_create_user(account: str = None, name: str = None, password: str = No
             },
         }
     url = f"{BASE_URL}{API_TENANT_USER}"
-    cred = load_cred()
-    tenant_id = cred.get("user_info", {}).get("tenant_id") if cred else None
+    # 无状态模式：优先用显式传入的 tenant_id，否则尝试从上下文（兼容旧逻辑）
+    if tenant_id is None:
+        cred = load_cred()
+        tenant_id = cred.get("user_info", {}).get("tenant_id") if cred else None
     payload = {
         "tenant_id": tenant_id,
         "account": account,
@@ -1335,32 +1339,374 @@ def tenant_grant_user_role(user_id: int = None, role_ids: list = None, confirmed
 
 
 # ===================== 角色管理 =====================
+def _create_role_form_card():
+    """构建创建角色表单卡片：必填项 role_name/role_code，可选项 remark"""
+    return _input_form_card(
+        title="创建角色",
+        subtitle="带 * 为必填项，填写完成后点击创建",
+        template="blue",
+        fields=[
+            {"name": "role_name", "placeholder": "请输入角色名称 *", "element_id": "cr_role_name", "required": True},
+            {"name": "role_code", "placeholder": "请输入角色编码 *", "element_id": "cr_role_code", "required": True},
+            {"name": "role_type", "placeholder": "角色类型：1-系统角色，2-自定义角色（默认1）",
+             "element_id": "cr_role_type", "required": False, "default_value": "1"},
+            {"name": "status", "placeholder": "状态：1-正常，2-禁用（默认1）",
+             "element_id": "cr_status", "required": False, "default_value": "1"},
+            {"name": "remark", "placeholder": "请输入备注（可选）", "element_id": "cr_remark", "required": False},
+        ],
+        submit_text="创建",
+        submit_action="tenant_create_role",
+    )
+
+
+def _create_role_confirm_card(role_name, role_code, role_type, status):
+    """构建创建角色确认卡片：展示待创建角色信息摘要，确认后回调触发 tenant_create_role(confirmed=True)"""
+    return {
+        "schema": "2.0",
+        "config": {"update_multi": True},
+        "header": {
+            "title": {"tag": "plain_text", "content": "确认创建角色"},
+            "subtitle": {"tag": "plain_text", "content": "请核对以下信息后确认创建"},
+            "template": "blue",
+            "padding": "12px 8px 12px 8px"
+        },
+        "body": {
+            "direction": "vertical",
+            "horizontal_spacing": "8px",
+            "vertical_spacing": "8px",
+            "elements": [
+                {
+                    "tag": "column_set",
+                    "flex_mode": "flow",
+                    "horizontal_spacing": "8px",
+                    "horizontal_align": "left",
+                    "columns": [
+                        {
+                            "tag": "column", "width": "weighted", "weight": 1,
+                            "elements": [{"tag": "markdown", "content": f"**角色名称**\n{role_name}"}],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        },
+                        {
+                            "tag": "column", "width": "weighted", "weight": 1,
+                            "elements": [{"tag": "markdown", "content": f"**角色编码**\n{role_code}"}],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        }
+                    ]
+                },
+                {
+                    "tag": "column_set",
+                    "flex_mode": "flow",
+                    "horizontal_spacing": "8px",
+                    "horizontal_align": "left",
+                    "columns": [
+                        {
+                            "tag": "column", "width": "weighted", "weight": 1,
+                            "elements": [{"tag": "markdown", "content": f"**角色类型**\n{_ROLE_TYPE.get(role_type, role_type)}"}],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        },
+                        {
+                            "tag": "column", "width": "weighted", "weight": 1,
+                            "elements": [{"tag": "markdown", "content": f"**状态**\n{_ROLE_STATUS.get(status, status)}"}],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        }
+                    ]
+                },
+                {
+                    "tag": "column_set",
+                    "flex_mode": "flow",
+                    "horizontal_spacing": "8px",
+                    "horizontal_align": "left",
+                    "columns": [
+                        {
+                            "tag": "column", "width": "auto",
+                            "elements": [
+                                {
+                                    "tag": "button",
+                                    "text": {"tag": "plain_text", "content": "确认创建"},
+                                    "type": "primary_filled", "width": "100px",
+                                    "behaviors": [{"type": "callback", "value": {"action": "tenant_create_role", "confirmed": True}}],
+                                    "name": "confirm_btn", "margin": "4px 42px 4px 0px",
+                                    "element_id": "cr_confirm_btn"
+                                }
+                            ],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        },
+                        {
+                            "tag": "column", "width": "auto",
+                            "elements": [
+                                {
+                                    "tag": "button",
+                                    "text": {"tag": "plain_text", "content": "取消"},
+                                    "type": "default_filled", "width": "100px",
+                                    "behaviors": [{"type": "callback", "value": {"action": "tenant_create_role_cancel", "confirmed": False}}],
+                                    "name": "cancel_btn", "margin": "4px 0px 4px 0px",
+                                    "element_id": "cr_cancel_btn"
+                                }
+                            ],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        }
+                    ],
+                    "margin": "12px 0px 0px 0px"
+                }
+            ]
+        }
+    }
+
+
+def _role_fmt_val(k, v):
+    """把角色字段值渲染为卡片单元格文本（识别 role_type/role_status 枚举）"""
+    if v is None or v == "":
+        return "—"
+    if isinstance(v, (dict, list)):
+        import json as _json
+        return _json.dumps(v, ensure_ascii=False)
+    if k == "role_type":
+        return _ROLE_TYPE.get(v, str(v))
+    if k == "status":
+        return _ROLE_STATUS.get(v, str(v))
+    return str(v)
+
+
+def _role_table_card(rows, meta=None, title="角色列表"):
+    """构建角色列表展示卡片：把行列表渲染为 Markdown 表格"""
+    if not rows:
+        return _result_card(
+            title=title, subtitle="没有查到符合条件的角色",
+            template="grey", content=[("提示", "没有查到符合条件的角色")],
+        )
+    cols = []
+    for row in rows:
+        if isinstance(row, dict):
+            for k in row.keys():
+                if k not in cols:
+                    cols.append(k)
+    if not cols:
+        cols = ["值"]
+    header_md = "| " + " | ".join([f"**{c}**" for c in cols]) + " |"
+    sep_md = "| " + " | ".join([":--"] * len(cols)) + " |"
+    body_lines = [header_md, sep_md]
+    for row in rows[:20]:
+        if isinstance(row, dict):
+            cells = [_role_fmt_val(c, row.get(c)).replace("|", "\\|").replace("\n", " ") for c in cols]
+            body_lines.append("| " + " | ".join(cells) + " |")
+        else:
+            body_lines.append(f"| {str(row).replace('|', '\\|')} |")
+    table_md = "\n".join(body_lines)
+    footer = ""
+    if len(rows) > 20:
+        footer += f"\n\n> 仅展示前 20 条，共 {len(rows)} 条。"
+    if meta:
+        parts = []
+        if meta.get("total") is not None:
+            parts.append(f"总数 {meta['total']}")
+        if meta.get("page") is not None:
+            parts.append(f"第 {meta['page']} 页")
+        if meta.get("size") is not None:
+            parts.append(f"每页 {meta['size']}")
+        if parts:
+            footer += "\n\n> " + " · ".join(parts)
+    return {
+        "schema": "2.0",
+        "config": {"update_multi": True},
+        "header": {
+            "title": {"tag": "plain_text", "content": title},
+            "subtitle": {"tag": "plain_text", "content": f"共 {meta.get('total', len(rows)) if meta else len(rows)} 条记录"},
+            "template": "turquoise", "padding": "12px 8px 12px 8px"
+        },
+        "body": {
+            "direction": "vertical", "horizontal_spacing": "8px", "vertical_spacing": "8px",
+            "elements": [{"tag": "markdown", "content": table_md + footer}]
+        }
+    }
+
+
+def _role_detail_card(role):
+    """构建角色详情回显卡片：键值对双栏展示（识别角色枚举）"""
+    if not isinstance(role, dict) or not role:
+        return _result_card(
+            title="角色详情", subtitle="未找到该角色",
+            template="grey", content=[("提示", "未找到该角色")],
+        )
+    items = list(role.items())
+    columns = []
+    i = 0
+    while i < len(items):
+        k1, v1 = items[i]
+        col1 = {
+            "tag": "column", "width": "weighted", "weight": 1,
+            "elements": [{"tag": "markdown", "content": f"**{k1}**\n{_role_fmt_val(k1, v1)}"}],
+            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+        }
+        if i + 1 < len(items):
+            k2, v2 = items[i + 1]
+            col2 = {
+                "tag": "column", "width": "weighted", "weight": 1,
+                "elements": [{"tag": "markdown", "content": f"**{k2}**\n{_role_fmt_val(k2, v2)}"}],
+                "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+            }
+            columns.append(col1); columns.append(col2); i += 2
+        else:
+            columns.append(col1); i += 1
+    column_sets = []
+    for j in range(0, len(columns), 2):
+        column_sets.append({
+            "tag": "column_set", "flex_mode": "flow",
+            "horizontal_spacing": "8px", "horizontal_align": "left",
+            "columns": columns[j:j + 2]
+        })
+    return {
+        "schema": "2.0",
+        "config": {"update_multi": True},
+        "header": {
+            "title": {"tag": "plain_text", "content": "角色详情"},
+            "subtitle": {"tag": "plain_text", "content": f"角色 #{role.get('id', role.get('role_id', '?'))}"},
+            "template": "turquoise", "padding": "12px 8px 12px 8px"
+        },
+        "body": {
+            "direction": "vertical", "horizontal_spacing": "8px", "vertical_spacing": "8px",
+            "elements": column_sets
+        }
+    }
+
+
+def _update_role_form_card(role_id, current=None):
+    """
+    构建更新角色表单卡片：先回显当前角色信息（从后端查询），用户在表单中修改后提交。
+    :param role_id: 角色ID
+    :param current: 当前角色信息 dict（来自 tenant_get_role 查询），None 时不预填
+    """
+    cur = current or {}
+    return _input_form_card(
+        title=f"更新角色 · #{role_id}",
+        subtitle="修改字段后点击确认修改（留空表示不修改）",
+        template="blue",
+        fields=[
+            {"name": "role_name", "placeholder": "角色名称", "element_id": "ur_role_name",
+             "required": False, "default_value": cur.get("role_name", "")},
+            {"name": "role_code", "placeholder": "角色编码", "element_id": "ur_role_code",
+             "required": False, "default_value": cur.get("role_code", "")},
+            {"name": "status", "placeholder": "状态：1-正常，2-禁用",
+             "element_id": "ur_status", "required": False,
+             "default_value": str(cur.get("status", "")) if cur.get("status") is not None else ""},
+            {"name": "remark", "placeholder": "备注", "element_id": "ur_remark",
+             "required": False, "default_value": cur.get("remark", "")},
+        ],
+        submit_text="确认修改",
+        submit_action="tenant_update_role",
+        cancel_text="取消修改",
+    )
+
+
+def _delete_role_confirm_card(role_id):
+    """构建删除角色确认卡片：参考登出确认卡片，确认删除 + 取消"""
+    return {
+        "schema": "2.0",
+        "config": {"update_multi": True},
+        "header": {
+            "title": {"tag": "plain_text", "content": "确认删除角色"},
+            "subtitle": {"tag": "plain_text", "content": "此操作不可恢复，请谨慎确认"},
+            "template": "orange", "padding": "12px 8px 12px 8px"
+        },
+        "body": {
+            "direction": "vertical", "horizontal_spacing": "8px", "vertical_spacing": "8px",
+            "elements": [
+                {
+                    "tag": "column_set", "flex_mode": "flow",
+                    "horizontal_spacing": "8px", "horizontal_align": "left",
+                    "columns": [
+                        {
+                            "tag": "column", "width": "weighted", "weight": 1,
+                            "elements": [{"tag": "markdown", "content": f"**即将删除**\n角色 #{role_id}"}],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        },
+                        {
+                            "tag": "column", "width": "weighted", "weight": 1,
+                            "elements": [{"tag": "markdown", "content": "**影响**\n删除后无法恢复，相关用户需重新分配角色"}],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        }
+                    ]
+                },
+                {
+                    "tag": "column_set", "flex_mode": "flow",
+                    "horizontal_spacing": "8px", "horizontal_align": "left",
+                    "columns": [
+                        {
+                            "tag": "column", "width": "auto",
+                            "elements": [
+                                {
+                                    "tag": "button",
+                                    "text": {"tag": "plain_text", "content": "确认删除"},
+                                    "type": "danger_filled", "width": "100px",
+                                    "behaviors": [{"type": "callback", "value": {"action": "tenant_delete_role", "confirmed": True}}],
+                                    "name": "confirm_btn", "margin": "4px 42px 4px 0px",
+                                    "element_id": "dr_confirm_btn"
+                                }
+                            ],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        },
+                        {
+                            "tag": "column", "width": "auto",
+                            "elements": [
+                                {
+                                    "tag": "button",
+                                    "text": {"tag": "plain_text", "content": "取消"},
+                                    "type": "default_filled", "width": "100px",
+                                    "behaviors": [{"type": "callback", "value": {"action": "tenant_delete_role_cancel", "confirmed": False}}],
+                                    "name": "cancel_btn", "margin": "4px 0px 4px 0px",
+                                    "element_id": "dr_cancel_btn"
+                                }
+                            ],
+                            "vertical_spacing": "8px", "horizontal_align": "left", "vertical_align": "top"
+                        }
+                    ],
+                    "margin": "12px 0px 0px 0px"
+                }
+            ]
+        }
+    }
+
+
 def tenant_create_role(role_name: str = None, role_code: str = None,
                        role_type: int = 1, status: int = 1, remark: str = "",
                        confirmed: bool = False):
     """
-    创建角色（仅租户管理员）—— 结构化交互：缺必填→引导；齐备未确认→确认；confirmed=True→执行。
+    创建角色（仅租户管理员）—— 飞书卡片交互：缺必填→表单卡片；齐备未确认→确认卡片；confirmed=True→执行。
     :param role_name: 角色名称（必填）
     :param role_code: 角色编码（必填）
     :param role_type: 角色类型：1-系统角色，2-自定义角色（默认1）
     :param status: 状态：1-正常，2-禁用（默认1）
     :param remark: 备注（可选）
-    :param confirmed: 是否已获用户确认（默认False先返回确认提示）
+    :param confirmed: 是否已获用户确认（默认False先返回确认卡片）
     """
     missing = [f for f, v in (("role_name", role_name), ("role_code", role_code)) if not v]
     if missing:
-        return _need_input("创建角色", missing,
-                           "tenant_create_role(role_name, role_code, ...)")
+        return {
+            "code": 4001,
+            "message": "请通过卡片填写必填信息",
+            "action": "need_input",
+            "card": _create_role_form_card(),
+            "data": {
+                "required_fields": ["role_name", "role_code"],
+                "next": "用户提交表单后调用 tenant_create_role(role_name, role_code, ...)",
+            },
+        }
     if not confirmed:
-        return _need_confirm(
-            "创建角色",
-            [
-                f"名称：{role_name}",
-                f"编码：{role_code}",
-                f"类型：{_ROLE_TYPE.get(role_type, role_type)}    状态：{_ROLE_STATUS.get(status, status)}",
-            ],
-            "tenant_create_role(..., confirmed=True)",
-        )
+        return {
+            "code": 4002,
+            "message": (
+                f"请确认创建角色\n"
+                f"  名称：{role_name}\n"
+                f"  编码：{role_code}\n"
+                f"  类型：{_ROLE_TYPE.get(role_type, role_type)}    状态：{_ROLE_STATUS.get(status, status)}"
+            ),
+            "action": "need_confirm",
+            "card": _create_role_confirm_card(role_name, role_code, role_type, status),
+            "data": {
+                "role_name": role_name,
+                "role_code": role_code,
+                "next": "用户确认后调用 tenant_create_role(..., confirmed=True)",
+            },
+        }
     url = f"{BASE_URL}{API_ROLE}"
     payload = {
         "role_name": role_name,
@@ -1369,53 +1715,120 @@ def tenant_create_role(role_name: str = None, role_code: str = None,
         "status": status,
         "remark": remark or None
     }
-    return authenticated_request("POST", url, json=payload)
+    res = authenticated_request("POST", url, json=payload)
+    if isinstance(res, dict) and res.get("code") == 0:
+        res["message"] = f"角色创建成功\n{role_name}（编码 {role_code}）已创建"
+        res["action"] = "create_success"
+        res["card"] = _result_card(
+            title="角色创建成功",
+            subtitle=f"{role_name}（编码 {role_code}）已创建",
+            template="green",
+            content=[
+                ("角色名称", role_name),
+                ("角色编码", role_code),
+                ("角色类型", _ROLE_TYPE.get(role_type, role_type)),
+            ],
+        )
+    return res
 
 
 def tenant_get_role_list(role_name: str = "", status: int = None,
                          page: int = 1, size: int = 10):
     """
-    分页查询角色列表。
+    分页查询角色列表，返回飞书展示卡片（Markdown 表格）。
     :param role_name: 角色名称（可选，用于搜索）
     :param status: 状态（可选）
     :param page: 页码（默认1）
     :param size: 每页数量（默认10）
     """
     url = f"{BASE_URL}{API_ROLE}"
-    params = {
-        "page": page,
-        "size": size
-    }
+    params = {"page": page, "size": size}
     if role_name:
         params["role_name"] = role_name
     if status is not None:
         params["status"] = status
-    return authenticated_request("GET", url, params=params)
+    res = authenticated_request("GET", url, params=params)
+    if isinstance(res, dict) and res.get("code") == 0:
+        rows, meta = _extract_rows(res.get("data"))
+        if rows is not None:
+            res["action"] = "query_result"
+            res["card"] = _role_table_card(rows, meta, title="角色列表")
+            res["message"] = f"查询完成，共 {meta.get('total', len(rows) if rows else 0)} 条记录"
+        else:
+            res["action"] = "query_result"
+            res["card"] = _role_table_card([], title="角色列表")
+            res["message"] = "没有查到符合条件的角色"
+    return res
 
 
 def tenant_get_role(role_id: int):
     """
-    查询角色详情。
+    查询角色详情，返回飞书展示卡片（键值对回显）。
     :param role_id: 角色ID
     """
     url = f"{BASE_URL}{API_ROLE}/{role_id}"
-    return authenticated_request("GET", url)
+    res = authenticated_request("GET", url)
+    if isinstance(res, dict) and res.get("code") == 0:
+        data = res.get("data")
+        if isinstance(data, dict):
+            res["action"] = "query_result"
+            res["card"] = _role_detail_card(data)
+            res["message"] = f"角色 #{role_id} 详情"
+        else:
+            res["action"] = "query_result"
+            res["card"] = _role_detail_card(None)
+            res["message"] = "未找到该角色"
+    return res
 
 
 def tenant_update_role(role_id: int, role_name: str = "",
                        role_code: str = "", status: int = None, remark: str = "",
                        confirmed: bool = False):
     """
-    更新角色（仅租户管理员）—— 结构化交互：仅改动字段会展示确认摘要。
+    更新角色（仅租户管理员）—— 飞书卡片交互：先回显当前角色信息（可编辑表单），confirmed=True 时执行更新。
     :param role_id: 角色ID（必填）
     :param role_name: 角色名称（可选）
     :param role_code: 角色编码（可选）
     :param status: 状态（可选）
     :param remark: 备注（可选）
-    :param confirmed: 是否已获用户确认（默认False先返回确认提示）
+    :param confirmed: 是否已获用户确认（默认False先返回回显可编辑卡片）
     """
     if not role_id:
-        return _need_input("更新角色", ["role_id"], "tenant_update_role(role_id, ...)")
+        return {
+            "code": 4001,
+            "message": "请提供要更新的角色ID",
+            "action": "need_input",
+            "card": _result_card(
+                title="更新角色", subtitle="请提供要更新的角色ID",
+                template="orange", content=[("提示", "请提供 role_id 后重试")],
+            ),
+            "data": {
+                "required_fields": ["role_id"],
+                "next": "调用 tenant_update_role(role_id, ...) 回显当前信息",
+            },
+        }
+    if not confirmed:
+        # 先查询当前角色信息用于回显
+        current = None
+        try:
+            detail_url = f"{BASE_URL}{API_ROLE}/{role_id}"
+            detail_res = authenticated_request("GET", detail_url)
+            if isinstance(detail_res, dict) and detail_res.get("code") == 0:
+                current = detail_res.get("data") if isinstance(detail_res.get("data"), dict) else None
+        except Exception:
+            pass
+        return {
+            "code": 4002,
+            "message": f"请修改需要更新的字段后点击确认修改\n当前编辑角色 #{role_id}",
+            "action": "need_confirm",
+            "card": _update_role_form_card(role_id, current),
+            "data": {
+                "role_id": role_id,
+                "current": current,
+                "next": "用户修改字段后调用 tenant_update_role(role_id, role_name=..., confirmed=True)",
+            },
+        }
+    # 已确认：收集非空字段执行更新
     payload = {}
     if role_name:
         payload["role_name"] = role_name
@@ -1426,32 +1839,79 @@ def tenant_update_role(role_id: int, role_name: str = "",
     if remark:
         payload["remark"] = remark
     if not payload:
-        return _need_input("更新角色（未提供任何要修改的字段）",
-                           ["role_name/role_code/status/remark 至少一项"],
-                           "tenant_update_role(role_id, role_name=..., ...)")
-    if not confirmed:
+        return {
+            "code": 4001,
+            "message": "未提供任何要修改的字段",
+            "action": "need_input",
+            "card": _result_card(
+                title="更新角色", subtitle="未提供任何要修改的字段",
+                template="orange",
+                content=[("角色ID", str(role_id)), ("提示", "请至少修改一个字段")],
+            ),
+            "data": {
+                "required_fields": ["role_name/role_code/status/remark 至少一项"],
+                "next": "tenant_update_role(role_id, role_name=..., ...)",
+            },
+        }
+    url = f"{BASE_URL}{API_ROLE}/{role_id}"
+    res = authenticated_request("PUT", url, json=payload)
+    if isinstance(res, dict) and res.get("code") == 0:
         changes = []
         for k, v in payload.items():
             if k == "status":
                 v = _ROLE_STATUS.get(v, v)
-            changes.append(f"{k} → {v}")
-        return _need_confirm(f"更新角色 · #{role_id}", changes,
-                             "tenant_update_role(role_id, ..., confirmed=True)")
-    url = f"{BASE_URL}{API_ROLE}/{role_id}"
-    return authenticated_request("PUT", url, json=payload)
+            changes.append((k, v))
+        res["message"] = f"角色更新成功\n角色 #{role_id} 的信息已更新"
+        res["action"] = "update_success"
+        res["card"] = _result_card(
+            title="角色更新成功",
+            subtitle=f"角色 #{role_id} 的信息已更新",
+            template="green",
+            content=changes,
+        )
+    return res
 
 
 def tenant_delete_role(role_id: int, confirmed: bool = False):
     """
-    删除角色（仅租户管理员）—— 高危操作，需二次确认。
+    删除角色（仅租户管理员）—— 飞书卡片交互：高危操作，需二次确认（确认/取消按钮）。
     :param role_id: 角色ID（必填）
-    :param confirmed: 是否已获用户确认（默认False先返回删除确认提示）
+    :param confirmed: 是否已获用户确认（默认False先返回删除确认卡片）
     """
     if not role_id:
-        return _need_input("删除角色", ["role_id"], "tenant_delete_role(role_id)")
+        return {
+            "code": 4001,
+            "message": "请提供要删除的角色ID",
+            "action": "need_input",
+            "card": _result_card(
+                title="删除角色", subtitle="请提供要删除的角色ID",
+                template="orange", content=[("提示", "请提供 role_id 后重试")],
+            ),
+            "data": {
+                "required_fields": ["role_id"],
+                "next": "调用 tenant_delete_role(role_id) 进入删除确认",
+            },
+        }
     if not confirmed:
-        return _need_confirm(f"删除角色 · #{role_id}",
-                             [f"即将删除角色 #{role_id}"],
-                             "tenant_delete_role(role_id, confirmed=True)", warn=True)
+        return {
+            "code": 4002,
+            "message": f"确认删除角色\n即将删除角色 #{role_id}\n此操作不可恢复，请谨慎确认。",
+            "action": "need_confirm",
+            "card": _delete_role_confirm_card(role_id),
+            "data": {
+                "role_id": role_id,
+                "next": "用户确认后调用 tenant_delete_role(role_id, confirmed=True)",
+            },
+        }
     url = f"{BASE_URL}{API_ROLE}/{role_id}"
-    return authenticated_request("DELETE", url)
+    res = authenticated_request("DELETE", url)
+    if isinstance(res, dict) and res.get("code") == 0:
+        res["message"] = f"角色删除成功\n角色 #{role_id} 已删除"
+        res["action"] = "delete_success"
+        res["card"] = _result_card(
+            title="角色删除成功",
+            subtitle=f"角色 #{role_id} 已删除",
+            template="green",
+            content=[("角色ID", str(role_id)), ("结果", "已删除")],
+        )
+    return res

@@ -10,7 +10,7 @@
   "tools": [
     {
       "tool_name": "sale_login",
-      "description": "销售端登录引导（分步交互，复用admin登录端点、凭证写入共享cred.json）。已登录则友好提示；未提供账号/密码时返回 action=need_login 引导输入；账号密码齐全时返回 action=need_confirm（密码脱敏）请与用户二次确认，确认后调用 sale_login_confirm 完成登录。account、password 均可选。",
+      "description": "销售端登录引导（分步交互，复用admin登录端点）。已登录则友好提示；未提供账号/密码时返回 action=need_login 引导输入；账号密码齐全时返回 action=need_confirm（密码脱敏）请与用户二次确认，确认后调用 sale_login_confirm 完成登录。account、password 均可选。",
       "parameters": [
         {
           "name": "account",
@@ -26,24 +26,30 @@
     },
     {
       "tool_name": "sale_login_confirm",
-      "description": "在 sale_login 引导并经用户确认后，执行真正登录并自动保存 access_token/refresh_token，返回美观的登录成功/失败提示",
+      "description": "在 sale_login 引导并经用户确认后，执行真正登录。成功后响应 data 返回 access_token/refresh_token/user_info，调用方需保存并在后续每次工具调用时携带 access_token",
       "parameters": [
         {
           "name": "account",
           "type": "string",
-          "description": "登录账号（可选，缺省时触发引导输入）"
+          "description": "登录账号"
         },
         {
           "name": "password",
           "type": "string",
-          "description": "登录密码（可选，缺省时触发引导输入）"
+          "description": "登录密码"
         }
       ]
     },
     {
       "tool_name": "sale_logout",
-      "description": "销售端登出（带二次确认）。confirmed=False 时返回 action=need_confirm 请确认；确认后以 confirmed=true 再次调用才会调用后端登出接口并清除本地共享凭证。",
+      "description": "销售端登出（带二次确认，需携带 access_token）。confirmed=False 时返回 action=need_confirm 请确认；确认后以 confirmed=true 再次调用才会调用后端登出接口销毁令牌。",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "confirmed",
           "type": "boolean",
@@ -53,13 +59,32 @@
     },
     {
       "tool_name": "sale_refresh_token",
-      "description": "自动刷新access_token，无需传入参数",
-      "parameters": []
+      "description": "使用 refresh_token 刷新 access_token。需传入 refresh_token 参数，成功后返回新的 access_token/refresh_token",
+      "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
+          "name": "refresh_token",
+          "type": "string",
+          "description": "登录后获取的刷新令牌（由飞书 Agent 从登录响应 data.refresh_token 中保存，用于刷新 access_token）",
+          "required": true
+        }
+      ]
     },
     {
       "tool_name": "sale_change_password",
       "description": "修改当前登录账号密码",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "old_password",
           "type": "string",
@@ -75,12 +100,25 @@
     {
       "tool_name": "sale_get_login_user",
       "description": "查询当前登录用户信息",
-      "parameters": []
+      "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        }
+      ]
     },
     {
       "tool_name": "sale_project_create",
       "description": "创建楼盘（POST /api/sale/project/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_code",
           "type": "string",
@@ -148,6 +186,12 @@
       "description": "分页查询楼盘列表（GET /api/sale/project/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -174,6 +218,12 @@
       "description": "查询楼盘详情（GET /api/sale/project/detail/{project_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID"
@@ -184,6 +234,12 @@
       "tool_name": "sale_project_update",
       "description": "更新楼盘（PUT /api/sale/project/update/{project_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -251,6 +307,12 @@
       "description": "删除楼盘（DELETE /api/sale/project/delete/{project_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID"
@@ -266,6 +328,12 @@
       "tool_name": "sale_building_create",
       "description": "创建楼栋（POST /api/sale/project/building/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -303,6 +371,12 @@
       "description": "分页查询楼栋列表（GET /api/sale/project/building/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID（必填）"
@@ -323,6 +397,12 @@
       "tool_name": "sale_building_update",
       "description": "更新楼栋（PUT /api/sale/project/building/update/{building_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "building_id",
           "type": "integer",
@@ -355,6 +435,12 @@
       "description": "创建单元（POST /api/sale/project/unit/create）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "building_id",
           "type": "integer",
           "description": "楼栋ID（必填）"
@@ -386,6 +472,12 @@
       "description": "分页查询单元列表（GET /api/sale/project/unit/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "building_id",
           "type": "integer",
           "description": "楼栋ID（必填）"
@@ -407,6 +499,12 @@
       "description": "查询单元详情（GET /api/sale/project/unit/detail/{unit_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "unit_id",
           "type": "integer",
           "description": "单元ID"
@@ -417,6 +515,12 @@
       "tool_name": "sale_unit_update",
       "description": "更新单元（PUT /api/sale/project/unit/update/{unit_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "unit_id",
           "type": "integer",
@@ -443,6 +547,12 @@
       "tool_name": "sale_house_create",
       "description": "创建房源（POST /api/sale/project/house/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -525,6 +635,12 @@
       "description": "分页查询房源列表（GET /api/sale/project/house/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID（必填）"
@@ -556,6 +672,12 @@
       "description": "查询房源详情（GET /api/sale/project/house/detail/{house_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "house_id",
           "type": "integer",
           "description": "房源ID"
@@ -566,6 +688,12 @@
       "tool_name": "sale_house_update",
       "description": "更新房源（PUT /api/sale/project/house/update/{house_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "house_id",
           "type": "integer",
@@ -618,6 +746,12 @@
       "description": "锁定房源（POST /api/sale/project/house/lock，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "house_id",
           "type": "integer",
           "description": "房源ID（必填）"
@@ -644,6 +778,12 @@
       "description": "解锁房源（POST /api/sale/project/house/unlock，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "house_id",
           "type": "integer",
           "description": "房源ID"
@@ -660,6 +800,12 @@
       "description": "获取销控面板（GET /api/sale/project/house/control/{project_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID"
@@ -670,6 +816,12 @@
       "tool_name": "sale_project_rule_create",
       "description": "创建项目规则（POST /api/sale/project/rule/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "rule_key",
           "type": "string",
@@ -707,6 +859,12 @@
       "description": "分页查询项目规则列表（GET /api/sale/project/rule/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -733,6 +891,12 @@
       "description": "查询项目规则详情（GET /api/sale/project/rule/detail/{rule_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "rule_id",
           "type": "integer",
           "description": "规则ID"
@@ -743,6 +907,12 @@
       "tool_name": "sale_project_rule_update",
       "description": "更新项目规则（PUT /api/sale/project/rule/update/{rule_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "rule_id",
           "type": "integer",
@@ -775,6 +945,12 @@
       "description": "删除项目规则（DELETE /api/sale/project/rule/delete/{rule_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "rule_id",
           "type": "integer",
           "description": "规则ID"
@@ -791,6 +967,12 @@
       "description": "获取规则值（GET /api/sale/project/rule/get-value，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID（必填）"
@@ -806,6 +988,12 @@
       "tool_name": "sale_customer_create",
       "description": "创建客户（POST /api/sale/customer/create，多body参数嵌套为{customer_data,tags,demands}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_name",
           "type": "string",
@@ -863,6 +1051,12 @@
       "description": "分页查询客户列表（GET /api/sale/customer/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -899,6 +1093,12 @@
       "description": "查询客户详情（GET /api/sale/customer/detail/{customer_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "customer_id",
           "type": "integer",
           "description": "客户ID"
@@ -909,6 +1109,12 @@
       "tool_name": "sale_customer_update",
       "description": "更新客户（PUT /api/sale/customer/update/{customer_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -956,6 +1162,12 @@
       "description": "删除客户（DELETE /api/sale/customer/delete/{customer_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "customer_id",
           "type": "integer",
           "description": "客户ID"
@@ -971,6 +1183,12 @@
       "tool_name": "sale_customer_transfer",
       "description": "转移客户归属（POST /api/sale/customer/transfer，参数走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -992,6 +1210,12 @@
       "tool_name": "sale_report_create",
       "description": "创建报备（POST /api/sale/customer/report/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -1039,6 +1263,12 @@
       "description": "分页查询报备列表（GET /api/sale/customer/report/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1064,6 +1294,12 @@
       "tool_name": "sale_visit_confirm",
       "description": "确认到访（POST /api/sale/customer/visit/confirm/{report_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_id",
           "type": "integer",
@@ -1096,6 +1332,12 @@
       "description": "分页查询到访列表（GET /api/sale/customer/visit/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1121,6 +1363,12 @@
       "tool_name": "sale_follow_create",
       "description": "创建跟进记录（POST /api/sale/customer/follow/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -1163,6 +1411,12 @@
       "description": "分页查询跟进记录列表（GET /api/sale/customer/follow/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "customer_id",
           "type": "integer",
           "description": "客户ID（必填）"
@@ -1184,6 +1438,12 @@
       "description": "添加客户到公海（POST /api/sale/customer/sea/add，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "customer_id",
           "type": "integer",
           "description": "客户ID"
@@ -1199,6 +1459,12 @@
       "tool_name": "sale_sea_pick",
       "description": "从公海认领客户（POST /api/sale/customer/sea/pick，参数走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -1216,6 +1482,12 @@
       "description": "分页查询公海客户列表（GET /api/sale/customer/sea/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1231,6 +1503,12 @@
       "tool_name": "sale_subscribe_create",
       "description": "创建认购单（POST /api/sale/transaction/subscribe/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -1283,6 +1561,12 @@
       "description": "分页查询认购单列表（GET /api/sale/transaction/subscribe/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1314,6 +1598,12 @@
       "description": "查询认购单详情（GET /api/sale/transaction/subscribe/detail/{subscribe_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "subscribe_id",
           "type": "integer",
           "description": "认购ID"
@@ -1324,6 +1614,12 @@
       "tool_name": "sale_subscribe_update",
       "description": "更新认购单（PUT /api/sale/transaction/subscribe/update/{subscribe_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "subscribe_id",
           "type": "integer",
@@ -1366,6 +1662,12 @@
       "description": "取消认购单（POST /api/sale/transaction/subscribe/cancel/{subscribe_id}，cancel_reason走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "subscribe_id",
           "type": "integer",
           "description": "认购ID（必填，路径参数）"
@@ -1386,6 +1688,12 @@
       "tool_name": "sale_contract_create",
       "description": "创建签约合同（POST /api/sale/transaction/contract/create/{subscribe_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "subscribe_id",
           "type": "integer",
@@ -1423,6 +1731,12 @@
       "description": "分页查询签约合同列表（GET /api/sale/transaction/contract/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1454,6 +1768,12 @@
       "description": "查询签约合同详情（GET /api/sale/transaction/contract/detail/{contract_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID"
@@ -1464,6 +1784,12 @@
       "tool_name": "sale_contract_update",
       "description": "更新签约合同（PUT /api/sale/transaction/contract/update/{contract_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "contract_id",
           "type": "integer",
@@ -1496,6 +1822,12 @@
       "description": "合同备案（POST /api/sale/transaction/contract/record/{contract_id}，record_date走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（必填，路径参数）"
@@ -1516,6 +1848,12 @@
       "tool_name": "sale_payment_create",
       "description": "创建回款记录（POST /api/sale/transaction/payment/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "contract_id",
           "type": "integer",
@@ -1553,6 +1891,12 @@
       "description": "分页查询回款记录列表（GET /api/sale/transaction/payment/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（必填）"
@@ -1573,6 +1917,12 @@
       "tool_name": "sale_payment_update",
       "description": "更新回款记录（PUT /api/sale/transaction/payment/update/{payment_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "payment_id",
           "type": "integer",
@@ -1610,6 +1960,12 @@
       "description": "确认回款（POST /api/sale/transaction/payment/confirm/{payment_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "payment_id",
           "type": "integer",
           "description": "回款ID"
@@ -1625,6 +1981,12 @@
       "tool_name": "sale_loan_create",
       "description": "创建贷款记录（POST /api/sale/transaction/loan/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "contract_id",
           "type": "integer",
@@ -1677,6 +2039,12 @@
       "description": "分页查询贷款记录列表（GET /api/sale/transaction/loan/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（必填）"
@@ -1697,6 +2065,12 @@
       "tool_name": "sale_loan_update",
       "description": "更新贷款记录（PUT /api/sale/transaction/loan/update/{loan_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "loan_id",
           "type": "integer",
@@ -1749,6 +2123,12 @@
       "description": "创建发票记录（POST /api/sale/transaction/receipt/create）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（必填）"
@@ -1780,6 +2160,12 @@
       "description": "分页查询发票记录列表（GET /api/sale/transaction/receipt/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（必填）"
@@ -1800,6 +2186,12 @@
       "tool_name": "sale_receipt_update",
       "description": "更新发票记录（PUT /api/sale/transaction/receipt/update/{receipt_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "receipt_id",
           "type": "integer",
@@ -1832,6 +2224,12 @@
       "description": "更新发票状态（PUT /api/sale/transaction/receipt/status/{receipt_id}，new_status走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "receipt_id",
           "type": "integer",
           "description": "发票ID（必填，路径参数）"
@@ -1853,6 +2251,12 @@
       "description": "获取交易综合列表（GET /api/sale/transaction/transaction/list，分页走query，filters走body）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1873,6 +2277,12 @@
       "tool_name": "sale_channel_create",
       "description": "创建渠道公司（POST /api/sale/commission/channel/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "channel_code",
           "type": "string",
@@ -1950,6 +2360,12 @@
       "description": "分页查询渠道公司列表（GET /api/sale/commission/channel/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1976,6 +2392,12 @@
       "description": "查询渠道公司详情（GET /api/sale/commission/channel/detail/{channel_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "channel_id",
           "type": "integer",
           "description": "渠道ID"
@@ -1986,6 +2408,12 @@
       "tool_name": "sale_channel_update",
       "description": "更新渠道公司（PUT /api/sale/commission/channel/update/{channel_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "channel_id",
           "type": "integer",
@@ -2043,6 +2471,12 @@
       "description": "终止合作（POST /api/sale/commission/channel/terminate/{channel_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "channel_id",
           "type": "integer",
           "description": "渠道ID"
@@ -2058,6 +2492,12 @@
       "tool_name": "sale_broker_create",
       "description": "创建经纪人（POST /api/sale/commission/broker/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "channel_id",
           "type": "integer",
@@ -2125,6 +2565,12 @@
       "description": "分页查询经纪人列表（GET /api/sale/commission/broker/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2156,6 +2602,12 @@
       "description": "查询经纪人详情（GET /api/sale/commission/broker/detail/{broker_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "broker_id",
           "type": "integer",
           "description": "经纪人ID"
@@ -2166,6 +2618,12 @@
       "tool_name": "sale_broker_update",
       "description": "更新经纪人（PUT /api/sale/commission/broker/update/{broker_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "broker_id",
           "type": "integer",
@@ -2223,6 +2681,12 @@
       "description": "创建佣金规则（POST /api/sale/commission/rule/create，字段均可选，由后端按project_id是否为空判定全局/楼盘专属）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID（为空表示全局规则，可选）"
@@ -2279,6 +2743,12 @@
       "description": "分页查询佣金规则列表（GET /api/sale/commission/rule/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2309,6 +2779,12 @@
       "tool_name": "sale_commission_rule_update",
       "description": "更新佣金规则（PUT /api/sale/commission/rule/update/{rule_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "rule_id",
           "type": "integer",
@@ -2366,6 +2842,12 @@
       "description": "生成佣金结算单（POST /api/sale/commission/bill/generate/{contract_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（路径参数）"
@@ -2381,6 +2863,12 @@
       "tool_name": "sale_bill_list",
       "description": "分页查询佣金结算单列表（GET /api/sale/commission/bill/list）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "page",
           "type": "integer",
@@ -2418,6 +2906,12 @@
       "description": "审核佣金结算单（POST /api/sale/commission/bill/audit/{bill_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "bill_id",
           "type": "integer",
           "description": "结算单ID（路径参数）"
@@ -2433,6 +2927,12 @@
       "tool_name": "sale_bill_freeze",
       "description": "冻结佣金结算单（POST /api/sale/commission/bill/freeze/{bill_id}，freeze_reason走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "bill_id",
           "type": "integer",
@@ -2454,6 +2954,12 @@
       "tool_name": "sale_team_create",
       "description": "创建销售团队（POST /api/sale/performance/team/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "team_code",
           "type": "string",
@@ -2501,6 +3007,12 @@
       "description": "分页查询销售团队列表（GET /api/sale/performance/team/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2527,6 +3039,12 @@
       "description": "查询销售团队详情（GET /api/sale/performance/team/detail/{team_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "team_id",
           "type": "integer",
           "description": "团队ID"
@@ -2537,6 +3055,12 @@
       "tool_name": "sale_team_update",
       "description": "更新销售团队（PUT /api/sale/performance/team/update/{team_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "team_id",
           "type": "integer",
@@ -2574,6 +3098,12 @@
       "description": "解散销售团队（POST /api/sale/performance/team/dissolve/{team_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "team_id",
           "type": "integer",
           "description": "团队ID（路径参数）"
@@ -2589,6 +3119,12 @@
       "tool_name": "sale_team_member_add",
       "description": "添加团队成员（POST /api/sale/performance/team/member/add，body为{team_id,user_id,member_role}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "team_id",
           "type": "integer",
@@ -2615,6 +3151,12 @@
       "tool_name": "sale_target_create",
       "description": "创建业绩目标（POST /api/sale/performance/target/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -2677,6 +3219,12 @@
       "description": "分页查询业绩目标列表（GET /api/sale/performance/target/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2707,6 +3255,12 @@
       "tool_name": "sale_target_update",
       "description": "更新业绩目标（PUT /api/sale/performance/target/update/{target_id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "target_id",
           "type": "integer",
@@ -2744,6 +3298,12 @@
       "description": "获取个人销售业绩（GET /api/sale/performance/personal，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "user_id",
           "type": "integer",
           "description": "用户ID（必填）"
@@ -2769,6 +3329,12 @@
       "tool_name": "sale_performance_team",
       "description": "获取团队销售业绩（GET /api/sale/performance/team，参数走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "team_id",
           "type": "integer",
@@ -2796,6 +3362,12 @@
       "description": "计算销售提成（POST /api/sale/performance/sales/commission/calculate/{contract_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "contract_id",
           "type": "integer",
           "description": "合同ID（路径参数）"
@@ -2811,6 +3383,12 @@
       "tool_name": "sale_sales_commission_list",
       "description": "分页查询销售提成列表（GET /api/sale/performance/sales/commission/list）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "page",
           "type": "integer",
@@ -2843,6 +3421,12 @@
       "description": "审核销售提成（POST /api/sale/performance/sales/commission/audit/{commission_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "commission_id",
           "type": "integer",
           "description": "提成ID（路径参数）"
@@ -2858,6 +3442,12 @@
       "tool_name": "sale_sales_commission_freeze",
       "description": "冻结销售提成（POST /api/sale/performance/sales/commission/freeze/{commission_id}，freeze_reason走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "commission_id",
           "type": "integer",
@@ -2880,6 +3470,12 @@
       "description": "获取项目总览统计-首页大屏（GET /api/sale/statistics/overview/{project_id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "project_id",
           "type": "integer",
           "description": "楼盘ID（路径参数）"
@@ -2890,6 +3486,12 @@
       "tool_name": "sale_statistics_project",
       "description": "获取项目维度统计（GET /api/sale/statistics/project，参数走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -2911,6 +3513,12 @@
       "tool_name": "sale_statistics_personal",
       "description": "获取个人维度统计（GET /api/sale/statistics/personal，参数走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "user_id",
           "type": "integer",
@@ -2938,6 +3546,12 @@
       "description": "获取团队维度统计（GET /api/sale/statistics/team，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "team_id",
           "type": "integer",
           "description": "团队ID（必填）"
@@ -2964,6 +3578,12 @@
       "description": "获取渠道维度统计（GET /api/sale/statistics/channel，参数走query）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "channel_id",
           "type": "integer",
           "description": "渠道ID（必填）"
@@ -2989,6 +3609,12 @@
       "tool_name": "sale_statistics_custom",
       "description": "获取自定义时段统计（GET /api/sale/statistics/custom，参数走query）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",

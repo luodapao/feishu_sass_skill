@@ -1,7 +1,7 @@
 """
 finance/config.py —— 财务技能 API 路径配置
 
-复用根 config 的 BASE_URL / AUTH_FILE（即与 admin/sale 共用同一后端、同一凭证文件）。
+复用根 config 的 BASE_URL（即与 admin/sale 共用同一后端）。无状态模式下凭证由调用方持有，不再共享凭证文件。
 以下为 10 个业务子路由的基址常量，完整路径在 finance/main.py 中按
 f"{BASE_URL}{API_FINANCE_XXX}/<route>" 拼接（与 sale 风格一致）。
 
@@ -17,7 +17,7 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from config import BASE_URL  # noqa: F401  复用同一后端与同一 AUTH_FILE
+from config import BASE_URL  # noqa: F401  复用同一后端
 
 # ===================== 接口地址 - 财务业务子路由基址 =====================
 API_FINANCE_ARCHIVE = "/api/finance/archive"                # 财务基础档案（配置/账户/科目/税率/银行/优惠规则）

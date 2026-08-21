@@ -10,7 +10,7 @@
   "tools": [
     {
       "tool_name": "finance_login",
-      "description": "财务端登录（复用 admin 登录端点，凭证写入共享 cred.json）",
+      "description": "财务端登录（复用 admin 登录端点）。登录成功后响应 data 返回 access_token/refresh_token/user_info，调用方需保存并在后续每次工具调用时携带 access_token",
       "parameters": [
         {
           "name": "account",
@@ -26,18 +26,44 @@
     },
     {
       "tool_name": "finance_logout",
-      "description": "财务端登出，销毁本地共享凭证并调用后端登出接口",
-      "parameters": []
+      "description": "财务端登出，需携带 access_token，调用后端登出接口销毁令牌",
+      "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        }
+      ]
     },
     {
       "tool_name": "finance_refresh_token",
-      "description": "自动刷新 access_token，无需传入参数",
-      "parameters": []
+      "description": "使用 refresh_token 刷新 access_token。需传入 refresh_token 参数，成功后返回新的 access_token/refresh_token",
+      "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
+          "name": "refresh_token",
+          "type": "string",
+          "description": "登录后获取的刷新令牌（由飞书 Agent 从登录响应 data.refresh_token 中保存，用于刷新 access_token）",
+          "required": true
+        }
+      ]
     },
     {
       "tool_name": "finance_change_password",
       "description": "修改当前登录账号密码",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "old_password",
           "type": "string",
@@ -53,12 +79,25 @@
     {
       "tool_name": "finance_get_login_user",
       "description": "查询当前登录用户信息",
-      "parameters": []
+      "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        }
+      ]
     },
     {
       "tool_name": "finance_archive_config_create",
       "description": "创建项目财务配置（POST /api/finance/archive/config/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -171,6 +210,12 @@
       "description": "获取项目财务配置列表（GET /api/finance/archive/config/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -192,6 +237,12 @@
       "description": "获取项目财务配置详情（GET /api/finance/archive/config/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "config_id",
           "type": "integer",
           "description": "项目财务配置ID"
@@ -202,6 +253,12 @@
       "tool_name": "finance_archive_config_update",
       "description": "更新项目财务配置（PUT /api/finance/archive/config/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "config_id",
           "type": "integer",
@@ -309,6 +366,12 @@
       "description": "删除项目财务配置（DELETE /api/finance/archive/config/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "config_id",
           "type": "integer",
           "description": "项目财务配置ID"
@@ -319,6 +382,12 @@
       "tool_name": "finance_archive_account_create",
       "description": "创建财务账户（POST /api/finance/archive/account/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "account_name",
           "type": "string",
@@ -381,6 +450,12 @@
       "description": "获取财务账户列表（GET /api/finance/archive/account/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -402,6 +477,12 @@
       "description": "获取财务账户详情（GET /api/finance/archive/account/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "account_id",
           "type": "integer",
           "description": "账户ID"
@@ -412,6 +493,12 @@
       "tool_name": "finance_archive_account_update",
       "description": "更新财务账户（PUT /api/finance/archive/account/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "account_id",
           "type": "integer",
@@ -474,6 +561,12 @@
       "description": "删除财务账户（DELETE /api/finance/archive/account/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "account_id",
           "type": "integer",
           "description": "账户ID"
@@ -484,6 +577,12 @@
       "tool_name": "finance_archive_subject_create",
       "description": "创建财务科目（POST /api/finance/archive/subject/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "subject_name",
           "type": "string",
@@ -541,6 +640,12 @@
       "description": "获取财务科目列表（GET /api/finance/archive/subject/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -562,6 +667,12 @@
       "description": "获取财务科目详情（GET /api/finance/archive/subject/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "subject_id",
           "type": "integer",
           "description": "科目ID"
@@ -572,6 +683,12 @@
       "tool_name": "finance_archive_subject_update",
       "description": "更新财务科目（PUT /api/finance/archive/subject/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "subject_id",
           "type": "integer",
@@ -629,6 +746,12 @@
       "description": "删除财务科目（DELETE /api/finance/archive/subject/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "subject_id",
           "type": "integer",
           "description": "科目ID"
@@ -639,6 +762,12 @@
       "tool_name": "finance_archive_tax_rate_create",
       "description": "创建税率配置（POST /api/finance/archive/tax-rate/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "tax_rate_name",
           "type": "string",
@@ -701,6 +830,12 @@
       "description": "获取税率配置列表（GET /api/finance/archive/tax-rate/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -722,6 +857,12 @@
       "description": "获取税率配置详情（GET /api/finance/archive/tax-rate/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "tax_rate_id",
           "type": "integer",
           "description": "税率ID"
@@ -732,6 +873,12 @@
       "tool_name": "finance_archive_tax_rate_update",
       "description": "更新税率配置（PUT /api/finance/archive/tax-rate/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "tax_rate_id",
           "type": "integer",
@@ -794,6 +941,12 @@
       "description": "删除税率配置（DELETE /api/finance/archive/tax-rate/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "tax_rate_id",
           "type": "integer",
           "description": "税率ID"
@@ -804,6 +957,12 @@
       "tool_name": "finance_archive_bank_create",
       "description": "创建银行信息（POST /api/finance/archive/bank/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "bank_name",
           "type": "string",
@@ -856,6 +1015,12 @@
       "description": "获取银行信息列表（GET /api/finance/archive/bank/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -877,6 +1042,12 @@
       "description": "获取银行信息详情（GET /api/finance/archive/bank/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "bank_id",
           "type": "integer",
           "description": "银行信息ID"
@@ -887,6 +1058,12 @@
       "tool_name": "finance_archive_bank_update",
       "description": "更新银行信息（PUT /api/finance/archive/bank/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "bank_id",
           "type": "integer",
@@ -939,6 +1116,12 @@
       "description": "删除银行信息（DELETE /api/finance/archive/bank/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "bank_id",
           "type": "integer",
           "description": "银行信息ID"
@@ -949,6 +1132,12 @@
       "tool_name": "finance_archive_preferential_rule_create",
       "description": "创建优惠规则（POST /api/finance/archive/preferential-rule/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -1031,6 +1220,12 @@
       "description": "获取优惠规则列表（GET /api/finance/archive/preferential-rule/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1052,6 +1247,12 @@
       "description": "获取优惠规则详情（GET /api/finance/archive/preferential-rule/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "rule_id",
           "type": "integer",
           "description": "优惠规则ID"
@@ -1062,6 +1263,12 @@
       "tool_name": "finance_archive_preferential_rule_update",
       "description": "更新优惠规则（PUT /api/finance/archive/preferential-rule/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "rule_id",
           "type": "integer",
@@ -1129,6 +1336,12 @@
       "description": "删除优惠规则（DELETE /api/finance/archive/preferential-rule/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "rule_id",
           "type": "integer",
           "description": "优惠规则ID"
@@ -1139,6 +1352,12 @@
       "tool_name": "finance_payment_installment_create",
       "description": "创建分期回款计划（POST /api/finance/payment/installment/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -1216,6 +1435,12 @@
       "description": "获取分期回款计划列表（GET /api/finance/payment/installment/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1237,6 +1462,12 @@
       "description": "获取分期回款计划详情（GET /api/finance/payment/installment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "installment_id",
           "type": "integer",
           "description": "分期回款计划ID"
@@ -1247,6 +1478,12 @@
       "tool_name": "finance_payment_installment_update",
       "description": "更新分期回款计划（PUT /api/finance/payment/installment/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "installment_id",
           "type": "integer",
@@ -1299,6 +1536,12 @@
       "description": "删除分期回款计划（DELETE /api/finance/payment/installment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "installment_id",
           "type": "integer",
           "description": "分期回款计划ID"
@@ -1309,6 +1552,12 @@
       "tool_name": "finance_payment_adjustment_create",
       "description": "创建面积差价调整（POST /api/finance/payment/adjustment/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -1386,6 +1635,12 @@
       "description": "获取面积差价调整列表（GET /api/finance/payment/adjustment/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1407,6 +1662,12 @@
       "description": "获取面积差价调整详情（GET /api/finance/payment/adjustment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "adjustment_id",
           "type": "integer",
           "description": "面积差价调整ID"
@@ -1417,6 +1678,12 @@
       "tool_name": "finance_payment_adjustment_update",
       "description": "更新面积差价调整（PUT /api/finance/payment/adjustment/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "adjustment_id",
           "type": "integer",
@@ -1469,6 +1736,12 @@
       "description": "删除面积差价调整（DELETE /api/finance/payment/adjustment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "adjustment_id",
           "type": "integer",
           "description": "面积差价调整ID"
@@ -1479,6 +1752,12 @@
       "tool_name": "finance_payment_receipt_create",
       "description": "创建收款记录（POST /api/finance/payment/receipt/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -1566,6 +1845,12 @@
       "description": "获取收款记录列表（GET /api/finance/payment/receipt/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1587,6 +1872,12 @@
       "description": "获取收款记录详情（GET /api/finance/payment/receipt/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "receipt_id",
           "type": "integer",
           "description": "收款记录ID"
@@ -1597,6 +1888,12 @@
       "tool_name": "finance_payment_receipt_update",
       "description": "更新收款记录（PUT /api/finance/payment/receipt/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "receipt_id",
           "type": "integer",
@@ -1674,6 +1971,12 @@
       "description": "删除收款记录（DELETE /api/finance/payment/receipt/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "receipt_id",
           "type": "integer",
           "description": "收款记录ID"
@@ -1684,6 +1987,12 @@
       "tool_name": "finance_payment_refund_create",
       "description": "创建退款记录（POST /api/finance/payment/refund/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -1756,6 +2065,12 @@
       "description": "获取退款记录列表（GET /api/finance/payment/refund/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1777,6 +2092,12 @@
       "description": "获取退款记录详情（GET /api/finance/payment/refund/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "refund_id",
           "type": "integer",
           "description": "退款记录ID"
@@ -1787,6 +2108,12 @@
       "tool_name": "finance_payment_refund_update",
       "description": "更新退款记录（PUT /api/finance/payment/refund/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "refund_id",
           "type": "integer",
@@ -1849,6 +2176,12 @@
       "description": "删除退款记录（DELETE /api/finance/payment/refund/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "refund_id",
           "type": "integer",
           "description": "退款记录ID"
@@ -1859,6 +2192,12 @@
       "tool_name": "finance_payment_deposit_create",
       "description": "创建认筹定金台账（POST /api/finance/payment/deposit/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "customer_id",
           "type": "integer",
@@ -1921,6 +2260,12 @@
       "description": "获取认筹定金台账列表（GET /api/finance/payment/deposit/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -1942,6 +2287,12 @@
       "description": "获取认筹定金台账详情（GET /api/finance/payment/deposit/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "deposit_id",
           "type": "integer",
           "description": "认筹定金台账ID"
@@ -1952,6 +2303,12 @@
       "tool_name": "finance_payment_deposit_update",
       "description": "更新认筹定金台账（PUT /api/finance/payment/deposit/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "deposit_id",
           "type": "integer",
@@ -1989,6 +2346,12 @@
       "description": "删除认筹定金台账（DELETE /api/finance/payment/deposit/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "deposit_id",
           "type": "integer",
           "description": "认筹定金台账ID"
@@ -1999,6 +2362,12 @@
       "tool_name": "finance_invoice_blue_create",
       "description": "创建蓝字发票（POST /api/finance/invoice/blue/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -2081,6 +2450,12 @@
       "description": "获取蓝字发票列表（GET /api/finance/invoice/blue/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2102,6 +2477,12 @@
       "description": "获取蓝字发票详情（GET /api/finance/invoice/blue/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "invoice_id",
           "type": "integer",
           "description": "蓝字发票ID"
@@ -2112,6 +2493,12 @@
       "tool_name": "finance_invoice_blue_update",
       "description": "更新蓝字发票（PUT /api/finance/invoice/blue/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "invoice_id",
           "type": "integer",
@@ -2164,6 +2551,12 @@
       "description": "删除蓝字发票（DELETE /api/finance/invoice/blue/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "invoice_id",
           "type": "integer",
           "description": "蓝字发票ID"
@@ -2174,6 +2567,12 @@
       "tool_name": "finance_invoice_red_create",
       "description": "创建红字发票（POST /api/finance/invoice/red/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "original_invoice_id",
           "type": "integer",
@@ -2211,6 +2610,12 @@
       "description": "获取红字发票列表（GET /api/finance/invoice/red/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2232,6 +2637,12 @@
       "description": "获取红字发票详情（GET /api/finance/invoice/red/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "red_id",
           "type": "integer",
           "description": "红字发票ID"
@@ -2242,6 +2653,12 @@
       "tool_name": "finance_invoice_red_update",
       "description": "更新红字发票（PUT /api/finance/invoice/red/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "red_id",
           "type": "integer",
@@ -2274,6 +2691,12 @@
       "description": "删除红字发票（DELETE /api/finance/invoice/red/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "red_id",
           "type": "integer",
           "description": "红字发票ID"
@@ -2284,6 +2707,12 @@
       "tool_name": "finance_invoice_receipt_create",
       "description": "创建内部收据（POST /api/finance/invoice/receipt/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -2331,6 +2760,12 @@
       "description": "获取内部收据列表（GET /api/finance/invoice/receipt/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2352,6 +2787,12 @@
       "description": "获取内部收据详情（GET /api/finance/invoice/receipt/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "receipt_id",
           "type": "integer",
           "description": "内部收据ID"
@@ -2362,6 +2803,12 @@
       "tool_name": "finance_invoice_receipt_update",
       "description": "更新内部收据（PUT /api/finance/invoice/receipt/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "receipt_id",
           "type": "integer",
@@ -2394,6 +2841,12 @@
       "description": "删除内部收据（DELETE /api/finance/invoice/receipt/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "receipt_id",
           "type": "integer",
           "description": "内部收据ID"
@@ -2404,6 +2857,12 @@
       "tool_name": "finance_invoice_maintenance_fund_create",
       "description": "创建维修基金台账（POST /api/finance/invoice/maintenance-fund/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "order_id",
           "type": "integer",
@@ -2461,6 +2920,12 @@
       "description": "获取维修基金台账列表（GET /api/finance/invoice/maintenance-fund/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2482,6 +2947,12 @@
       "description": "获取维修基金台账详情（GET /api/finance/invoice/maintenance-fund/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "fund_id",
           "type": "integer",
           "description": "维修基金台账ID"
@@ -2492,6 +2963,12 @@
       "tool_name": "finance_invoice_maintenance_fund_update",
       "description": "更新维修基金台账（PUT /api/finance/invoice/maintenance-fund/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "fund_id",
           "type": "integer",
@@ -2514,6 +2991,12 @@
       "description": "删除维修基金台账（DELETE /api/finance/invoice/maintenance-fund/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "fund_id",
           "type": "integer",
           "description": "维修基金台账ID"
@@ -2524,6 +3007,12 @@
       "tool_name": "finance_invoice_tax_declaration_create",
       "description": "创建税务申报记录（POST /api/finance/invoice/tax-declaration/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -2576,6 +3065,12 @@
       "description": "获取税务申报记录列表（GET /api/finance/invoice/tax-declaration/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2602,6 +3097,12 @@
       "description": "获取税务申报记录详情（GET /api/finance/invoice/tax-declaration/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "declare_id",
           "type": "integer",
           "description": "税务申报记录ID"
@@ -2612,6 +3113,12 @@
       "tool_name": "finance_invoice_tax_declaration_update",
       "description": "更新税务申报记录（PUT /api/finance/invoice/tax-declaration/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "declare_id",
           "type": "integer",
@@ -2649,6 +3156,12 @@
       "description": "删除税务申报记录（DELETE /api/finance/invoice/tax-declaration/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "declare_id",
           "type": "integer",
           "description": "税务申报记录ID"
@@ -2659,6 +3172,12 @@
       "tool_name": "finance_commission_pay_create",
       "description": "创建佣金付款单（POST /api/finance/commission/pay/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -2791,6 +3310,12 @@
       "description": "获取佣金付款单列表（GET /api/finance/commission/pay/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -2827,6 +3352,12 @@
       "description": "获取佣金付款单详情（GET /api/finance/commission/pay/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "pay_id",
           "type": "integer",
           "description": "佣金付款单ID"
@@ -2837,6 +3368,12 @@
       "tool_name": "finance_commission_pay_update",
       "description": "更新佣金付款单（PUT /api/finance/commission/pay/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "pay_id",
           "type": "integer",
@@ -2929,6 +3466,12 @@
       "description": "删除佣金付款单（DELETE /api/finance/commission/pay/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "pay_id",
           "type": "integer",
           "description": "佣金付款单ID"
@@ -2939,6 +3482,12 @@
       "tool_name": "finance_commission_deduct_create",
       "description": "创建佣金扣罚记录（POST /api/finance/commission/deduct/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -3046,6 +3595,12 @@
       "description": "获取佣金扣罚记录列表（GET /api/finance/commission/deduct/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -3082,6 +3637,12 @@
       "description": "获取佣金扣罚记录详情（GET /api/finance/commission/deduct/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "deduct_id",
           "type": "integer",
           "description": "佣金扣罚记录ID"
@@ -3092,6 +3653,12 @@
       "tool_name": "finance_commission_deduct_update",
       "description": "更新佣金扣罚记录（PUT /api/finance/commission/deduct/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "deduct_id",
           "type": "integer",
@@ -3119,6 +3686,12 @@
       "description": "删除佣金扣罚记录（DELETE /api/finance/commission/deduct/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "deduct_id",
           "type": "integer",
           "description": "佣金扣罚记录ID"
@@ -3129,6 +3702,12 @@
       "tool_name": "finance_commission_sales_create",
       "description": "创建销售提成支付明细（POST /api/finance/commission/sales/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -3221,6 +3800,12 @@
       "description": "获取销售提成支付列表（GET /api/finance/commission/sales/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -3252,6 +3837,12 @@
       "description": "获取销售提成支付详情（GET /api/finance/commission/sales/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "sales_id",
           "type": "integer",
           "description": "销售提成支付明细ID"
@@ -3262,6 +3853,12 @@
       "tool_name": "finance_commission_sales_update",
       "description": "更新销售提成支付明细（PUT /api/finance/commission/sales/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "sales_id",
           "type": "integer",
@@ -3299,6 +3896,12 @@
       "description": "删除销售提成支付明细（DELETE /api/finance/commission/sales/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "sales_id",
           "type": "integer",
           "description": "销售提成支付明细ID"
@@ -3309,6 +3912,12 @@
       "tool_name": "finance_commission_bonus_create",
       "description": "创建内部销售提成付款单（POST /api/finance/commission/bonus/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -3416,6 +4025,12 @@
       "description": "获取内部销售提成付款单列表（GET /api/finance/commission/bonus/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -3452,6 +4067,12 @@
       "description": "获取内部销售提成付款单详情（GET /api/finance/commission/bonus/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "bonus_id",
           "type": "integer",
           "description": "内部销售提成付款单ID"
@@ -3462,6 +4083,12 @@
       "tool_name": "finance_commission_bonus_update",
       "description": "更新内部销售提成付款单（PUT /api/finance/commission/bonus/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "bonus_id",
           "type": "integer",
@@ -3544,6 +4171,12 @@
       "description": "删除内部销售提成付款单（DELETE /api/finance/commission/bonus/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "bonus_id",
           "type": "integer",
           "description": "内部销售提成付款单ID"
@@ -3554,6 +4187,12 @@
       "tool_name": "finance_cost_expense_create",
       "description": "创建通用费用申请（POST /api/finance/cost/expense/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "apply_user_id",
           "type": "integer",
@@ -3671,6 +4310,12 @@
       "description": "获取通用费用申请列表（GET /api/finance/cost/expense/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -3702,6 +4347,12 @@
       "description": "获取通用费用申请详情（GET /api/finance/cost/expense/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "expense_id",
           "type": "integer",
           "description": "通用费用申请ID"
@@ -3712,6 +4363,12 @@
       "tool_name": "finance_cost_expense_update",
       "description": "更新通用费用申请（PUT /api/finance/cost/expense/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "expense_id",
           "type": "integer",
@@ -3799,6 +4456,12 @@
       "description": "删除通用费用申请（DELETE /api/finance/cost/expense/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "expense_id",
           "type": "integer",
           "description": "通用费用申请ID"
@@ -3809,6 +4472,12 @@
       "tool_name": "finance_cost_reimbursement_create",
       "description": "创建费用报销（POST /api/finance/cost/reimbursement/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "employee_id",
           "type": "integer",
@@ -3946,6 +4615,12 @@
       "description": "获取费用报销列表（GET /api/finance/cost/reimbursement/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -3982,6 +4657,12 @@
       "description": "获取费用报销详情（GET /api/finance/cost/reimbursement/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "reimbursement_id",
           "type": "integer",
           "description": "费用报销ID"
@@ -3992,6 +4673,12 @@
       "tool_name": "finance_cost_reimbursement_update",
       "description": "更新费用报销（PUT /api/finance/cost/reimbursement/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "reimbursement_id",
           "type": "integer",
@@ -4089,6 +4776,12 @@
       "description": "删除费用报销（DELETE /api/finance/cost/reimbursement/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "reimbursement_id",
           "type": "integer",
           "description": "费用报销ID"
@@ -4099,6 +4792,12 @@
       "tool_name": "finance_cost_payment_create",
       "description": "创建费用付款（POST /api/finance/cost/payment/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "account_id",
           "type": "integer",
@@ -4241,6 +4940,12 @@
       "description": "获取费用付款列表（GET /api/finance/cost/payment/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -4277,6 +4982,12 @@
       "description": "获取费用付款详情（GET /api/finance/cost/payment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "payment_id",
           "type": "integer",
           "description": "费用付款ID"
@@ -4287,6 +4998,12 @@
       "tool_name": "finance_cost_payment_update",
       "description": "更新费用付款（PUT /api/finance/cost/payment/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "payment_id",
           "type": "integer",
@@ -4399,6 +5116,12 @@
       "description": "删除费用付款（DELETE /api/finance/cost/payment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "payment_id",
           "type": "integer",
           "description": "费用付款ID"
@@ -4409,6 +5132,12 @@
       "tool_name": "finance_cost_advertising_create",
       "description": "创建广告推广成本（POST /api/finance/cost/advertising/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -4561,6 +5290,12 @@
       "description": "获取广告推广成本列表（GET /api/finance/cost/advertising/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -4597,6 +5332,12 @@
       "description": "获取广告推广成本详情（GET /api/finance/cost/advertising/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "cost_id",
           "type": "integer",
           "description": "广告推广成本ID"
@@ -4607,6 +5348,12 @@
       "tool_name": "finance_cost_advertising_update",
       "description": "更新广告推广成本（PUT /api/finance/cost/advertising/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "cost_id",
           "type": "integer",
@@ -4694,6 +5441,12 @@
       "description": "删除广告推广成本（DELETE /api/finance/cost/advertising/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "cost_id",
           "type": "integer",
           "description": "广告推广成本ID"
@@ -4704,6 +5457,12 @@
       "tool_name": "finance_cost_engineering_create",
       "description": "创建工程建设成本（POST /api/finance/cost/engineering/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -4861,6 +5620,12 @@
       "description": "获取工程建设成本列表（GET /api/finance/cost/engineering/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -4902,6 +5667,12 @@
       "description": "获取工程建设成本详情（GET /api/finance/cost/engineering/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "cost_id",
           "type": "integer",
           "description": "工程建设成本ID"
@@ -4912,6 +5683,12 @@
       "tool_name": "finance_cost_engineering_update",
       "description": "更新工程建设成本（PUT /api/finance/cost/engineering/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "cost_id",
           "type": "integer",
@@ -4999,6 +5776,12 @@
       "description": "删除工程建设成本（DELETE /api/finance/cost/engineering/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "cost_id",
           "type": "integer",
           "description": "工程建设成本ID"
@@ -5009,6 +5792,12 @@
       "tool_name": "finance_arap_receivable_create",
       "description": "创建客户应收台账（POST /api/finance/ar-ap/receivable/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -5126,6 +5915,12 @@
       "description": "获取客户应收台账列表（GET /api/finance/ar-ap/receivable/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -5162,6 +5957,12 @@
       "description": "获取客户应收台账详情（GET /api/finance/ar-ap/receivable/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "ar_id",
           "type": "integer",
           "description": "客户应收台账ID"
@@ -5172,6 +5973,12 @@
       "tool_name": "finance_arap_receivable_update",
       "description": "更新客户应收台账（PUT /api/finance/ar-ap/receivable/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "ar_id",
           "type": "integer",
@@ -5259,6 +6066,12 @@
       "description": "删除客户应收台账（DELETE /api/finance/ar-ap/receivable/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "ar_id",
           "type": "integer",
           "description": "客户应收台账ID"
@@ -5269,6 +6082,12 @@
       "tool_name": "finance_arap_payable_create",
       "description": "创建供应商应付台账（POST /api/finance/ar-ap/payable/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -5396,6 +6215,12 @@
       "description": "获取供应商应付台账列表（GET /api/finance/ar-ap/payable/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -5432,6 +6257,12 @@
       "description": "获取供应商应付台账详情（GET /api/finance/ar-ap/payable/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "payable_id",
           "type": "integer",
           "description": "供应商应付台账ID"
@@ -5442,6 +6273,12 @@
       "tool_name": "finance_arap_payable_update",
       "description": "更新供应商应付台账（PUT /api/finance/ar-ap/payable/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "payable_id",
           "type": "integer",
@@ -5554,6 +6391,12 @@
       "description": "删除供应商应付台账（DELETE /api/finance/ar-ap/payable/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "payable_id",
           "type": "integer",
           "description": "供应商应付台账ID"
@@ -5564,6 +6407,12 @@
       "tool_name": "finance_arap_prepayment_create",
       "description": "创建预付款台账（POST /api/finance/ar-ap/prepayment/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -5691,6 +6540,12 @@
       "description": "获取预付款台账列表（GET /api/finance/ar-ap/prepayment/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -5727,6 +6582,12 @@
       "description": "获取预付款台账详情（GET /api/finance/ar-ap/prepayment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "advance_id",
           "type": "integer",
           "description": "预付款台账ID"
@@ -5737,6 +6598,12 @@
       "tool_name": "finance_arap_prepayment_update",
       "description": "更新预付款台账（PUT /api/finance/ar-ap/prepayment/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "advance_id",
           "type": "integer",
@@ -5839,6 +6706,12 @@
       "description": "删除预付款台账（DELETE /api/finance/ar-ap/prepayment/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "advance_id",
           "type": "integer",
           "description": "预付款台账ID"
@@ -5849,6 +6722,12 @@
       "tool_name": "finance_arap_other_loan_create",
       "description": "创建其他往来款台账（POST /api/finance/ar-ap/other-loan/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "loan_counterparty_type",
           "type": "integer",
@@ -5961,6 +6840,12 @@
       "description": "获取其他往来款台账列表（GET /api/finance/ar-ap/other-loan/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -5997,6 +6882,12 @@
       "description": "获取其他往来款台账详情（GET /api/finance/ar-ap/other-loan/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "loan_id",
           "type": "integer",
           "description": "其他往来款台账ID"
@@ -6007,6 +6898,12 @@
       "tool_name": "finance_arap_other_loan_update",
       "description": "更新其他往来款台账（PUT /api/finance/ar-ap/other-loan/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "loan_id",
           "type": "integer",
@@ -6114,6 +7011,12 @@
       "description": "删除其他往来款台账（DELETE /api/finance/ar-ap/other-loan/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "loan_id",
           "type": "integer",
           "description": "其他往来款台账ID"
@@ -6124,6 +7027,12 @@
       "tool_name": "finance_reconciliation_bank_create",
       "description": "创建银行对账记录（POST /api/finance/reconciliation/bank/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "account_id",
           "type": "integer",
@@ -6221,6 +7130,12 @@
       "description": "银行对账自动匹配（POST /api/finance/reconciliation/bank/match）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "account_id",
           "type": "integer",
           "description": "银行账户ID（可选）"
@@ -6241,6 +7156,12 @@
       "tool_name": "finance_reconciliation_bank_finish",
       "description": "完成银行对账（POST /api/finance/reconciliation/bank/finish）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "check_id",
           "type": "integer",
@@ -6288,6 +7209,12 @@
       "description": "获取银行对账记录列表（GET /api/finance/reconciliation/bank/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -6329,6 +7256,12 @@
       "description": "获取银行对账记录详情（GET /api/finance/reconciliation/bank/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "check_id",
           "type": "integer",
           "description": "银行对账记录ID"
@@ -6339,6 +7272,12 @@
       "tool_name": "finance_reconciliation_bank_update",
       "description": "更新银行对账记录（PUT /api/finance/reconciliation/bank/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "check_id",
           "type": "integer",
@@ -6411,6 +7350,12 @@
       "description": "删除银行对账记录（DELETE /api/finance/reconciliation/bank/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "check_id",
           "type": "integer",
           "description": "银行对账记录ID"
@@ -6421,6 +7366,12 @@
       "tool_name": "finance_reconciliation_daily_create",
       "description": "创建每日资金轧账记录（POST /api/finance/reconciliation/daily/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "account_id",
           "type": "integer",
@@ -6538,6 +7489,12 @@
       "description": "审核每日资金轧账记录（POST /api/finance/reconciliation/daily/audit）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "account_record_id",
           "type": "integer",
           "description": "轧账记录ID（必填，映射请求体 id）"
@@ -6563,6 +7520,12 @@
       "tool_name": "finance_reconciliation_daily_list",
       "description": "获取每日资金轧账记录列表（GET /api/finance/reconciliation/daily/list）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "page",
           "type": "integer",
@@ -6600,6 +7563,12 @@
       "description": "获取每日资金轧账记录详情（GET /api/finance/reconciliation/daily/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "account_record_id",
           "type": "integer",
           "description": "每日资金轧账记录ID"
@@ -6610,6 +7579,12 @@
       "tool_name": "finance_reconciliation_daily_update",
       "description": "更新每日资金轧账记录（PUT /api/finance/reconciliation/daily/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "account_record_id",
           "type": "integer",
@@ -6707,6 +7682,12 @@
       "description": "删除每日资金轧账记录（DELETE /api/finance/reconciliation/daily/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "account_record_id",
           "type": "integer",
           "description": "每日资金轧账记录ID"
@@ -6717,6 +7698,12 @@
       "tool_name": "finance_reconciliation_channel_create",
       "description": "创建渠道月度对账记录（POST /api/finance/reconciliation/channel/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -6844,6 +7831,12 @@
       "description": "确认渠道月度对账（POST /api/finance/reconciliation/channel/confirm）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "reconcile_id",
           "type": "integer",
           "description": "渠道对账记录ID（必填，映射请求体 id）"
@@ -6874,6 +7867,12 @@
       "tool_name": "finance_reconciliation_channel_list",
       "description": "获取渠道月度对账记录列表（GET /api/finance/reconciliation/channel/list）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "page",
           "type": "integer",
@@ -6911,6 +7910,12 @@
       "description": "获取渠道月度对账记录详情（GET /api/finance/reconciliation/channel/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "reconcile_id",
           "type": "integer",
           "description": "渠道月度对账记录ID"
@@ -6921,6 +7926,12 @@
       "tool_name": "finance_reconciliation_channel_update",
       "description": "更新渠道月度对账记录（PUT /api/finance/reconciliation/channel/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "reconcile_id",
           "type": "integer",
@@ -6998,6 +8009,12 @@
       "description": "删除渠道月度对账记录（DELETE /api/finance/reconciliation/channel/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "reconcile_id",
           "type": "integer",
           "description": "渠道月度对账记录ID"
@@ -7008,6 +8025,12 @@
       "tool_name": "finance_voucher_create",
       "description": "创建会计凭证（POST /api/finance/voucher/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "voucher_type",
           "type": "integer",
@@ -7120,6 +8143,12 @@
       "description": "审核会计凭证（POST /api/finance/voucher/audit）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "voucher_id",
           "type": "integer",
           "description": "凭证ID（必填，映射请求体 id）"
@@ -7141,6 +8170,12 @@
       "description": "红字冲销会计凭证（POST /api/finance/voucher/red-flush）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "voucher_id",
           "type": "integer",
           "description": "凭证ID（必填，映射请求体 id）"
@@ -7161,6 +8196,12 @@
       "tool_name": "finance_voucher_list",
       "description": "获取会计凭证列表（GET /api/finance/voucher/list）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "page",
           "type": "integer",
@@ -7203,6 +8244,12 @@
       "description": "获取会计凭证详情（GET /api/finance/voucher/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "voucher_id",
           "type": "integer",
           "description": "会计凭证ID"
@@ -7214,6 +8261,12 @@
       "description": "获取会计凭证及明细（GET /api/finance/voucher/{id}/with-items）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "voucher_id",
           "type": "integer",
           "description": "会计凭证ID"
@@ -7224,6 +8277,12 @@
       "tool_name": "finance_voucher_update",
       "description": "更新会计凭证（PUT /api/finance/voucher/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "voucher_id",
           "type": "integer",
@@ -7326,6 +8385,12 @@
       "description": "删除会计凭证（DELETE /api/finance/voucher/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "voucher_id",
           "type": "integer",
           "description": "会计凭证ID"
@@ -7336,6 +8401,12 @@
       "tool_name": "finance_voucher_item_create",
       "description": "创建凭证明细（POST /api/finance/voucher/item/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "voucher_id",
           "type": "integer",
@@ -7453,6 +8524,12 @@
       "description": "获取凭证明细列表（GET /api/finance/voucher/item/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码（默认1）"
@@ -7489,6 +8566,12 @@
       "description": "获取凭证明细详情（GET /api/finance/voucher/item/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "item_id",
           "type": "integer",
           "description": "凭证明细ID"
@@ -7499,6 +8582,12 @@
       "tool_name": "finance_voucher_item_update",
       "description": "更新凭证明细（PUT /api/finance/voucher/item/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "item_id",
           "type": "integer",
@@ -7616,6 +8705,12 @@
       "description": "删除凭证明细（DELETE /api/finance/voucher/item/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "item_id",
           "type": "integer",
           "description": "凭证明细ID"
@@ -7626,6 +8721,12 @@
       "tool_name": "finance_audit_operate_log_create",
       "description": "创建财务操作审计日志（POST /api/finance/audit/operate-log/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "operate_user_id",
           "type": "integer",
@@ -7743,6 +8844,12 @@
       "description": "获取财务操作审计日志列表（GET /api/finance/audit/operate-log/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -7794,6 +8901,12 @@
       "description": "获取财务操作审计日志详情（GET /api/finance/audit/operate-log/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "log_id",
           "type": "integer",
           "description": "操作审计日志ID"
@@ -7804,6 +8917,12 @@
       "tool_name": "finance_audit_operate_log_update",
       "description": "更新财务操作审计日志（PUT /api/finance/audit/operate-log/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "log_id",
           "type": "integer",
@@ -7921,6 +9040,12 @@
       "description": "删除财务操作审计日志（DELETE /api/finance/audit/operate-log/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "log_id",
           "type": "integer",
           "description": "操作审计日志ID"
@@ -7931,6 +9056,12 @@
       "tool_name": "finance_report_cash_flow_stat_create",
       "description": "创建现金流统计（POST /api/finance/report/cash-flow-stat/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -8048,6 +9179,12 @@
       "description": "获取现金流统计列表（GET /api/finance/report/cash-flow-stat/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -8084,6 +9221,12 @@
       "description": "获取现金流统计详情（GET /api/finance/report/cash-flow-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "现金流统计ID"
@@ -8094,6 +9237,12 @@
       "tool_name": "finance_report_cash_flow_stat_update",
       "description": "更新现金流统计（PUT /api/finance/report/cash-flow-stat/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "stat_id",
           "type": "integer",
@@ -8201,6 +9350,12 @@
       "description": "删除现金流统计（DELETE /api/finance/report/cash-flow-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "现金流统计ID"
@@ -8211,6 +9366,12 @@
       "tool_name": "finance_report_receivable_stat_create",
       "description": "创建应收款统计（POST /api/finance/report/receivable-stat/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -8303,6 +9464,12 @@
       "description": "获取应收款统计列表（GET /api/finance/report/receivable-stat/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -8339,6 +9506,12 @@
       "description": "获取应收款统计详情（GET /api/finance/report/receivable-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "应收款统计ID"
@@ -8349,6 +9522,12 @@
       "tool_name": "finance_report_receivable_stat_update",
       "description": "更新应收款统计（PUT /api/finance/report/receivable-stat/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "stat_id",
           "type": "integer",
@@ -8431,6 +9610,12 @@
       "description": "删除应收款统计（DELETE /api/finance/report/receivable-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "应收款统计ID"
@@ -8441,6 +9626,12 @@
       "tool_name": "finance_report_tax_stat_create",
       "description": "创建税务统计（POST /api/finance/report/tax-stat/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -8528,6 +9719,12 @@
       "description": "获取税务统计列表（GET /api/finance/report/tax-stat/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -8569,6 +9766,12 @@
       "description": "获取税务统计详情（GET /api/finance/report/tax-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "税务统计ID"
@@ -8579,6 +9782,12 @@
       "tool_name": "finance_report_tax_stat_update",
       "description": "更新税务统计（PUT /api/finance/report/tax-stat/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "stat_id",
           "type": "integer",
@@ -8656,6 +9865,12 @@
       "description": "删除税务统计（DELETE /api/finance/report/tax-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "税务统计ID"
@@ -8666,6 +9881,12 @@
       "tool_name": "finance_report_commission_stat_create",
       "description": "创建佣金统计（POST /api/finance/report/commission-stat/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "project_id",
           "type": "integer",
@@ -8758,6 +9979,12 @@
       "description": "获取佣金统计列表（GET /api/finance/report/commission-stat/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -8804,6 +10031,12 @@
       "description": "获取佣金统计详情（GET /api/finance/report/commission-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "佣金统计ID"
@@ -8814,6 +10047,12 @@
       "tool_name": "finance_report_commission_stat_update",
       "description": "更新佣金统计（PUT /api/finance/report/commission-stat/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "stat_id",
           "type": "integer",
@@ -8881,6 +10120,12 @@
       "description": "删除佣金统计（DELETE /api/finance/report/commission-stat/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "stat_id",
           "type": "integer",
           "description": "佣金统计ID"
@@ -8891,6 +10136,12 @@
       "tool_name": "finance_report_cash_flow_create",
       "description": "创建现金流量表（POST /api/finance/report/cash-flow/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_period",
           "type": "string",
@@ -8973,6 +10224,12 @@
       "description": "获取现金流量表列表（GET /api/finance/report/cash-flow/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -9004,6 +10261,12 @@
       "description": "获取现金流量表详情（GET /api/finance/report/cash-flow/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "现金流量表ID"
@@ -9014,6 +10277,12 @@
       "tool_name": "finance_report_cash_flow_update",
       "description": "更新现金流量表（PUT /api/finance/report/cash-flow/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_id",
           "type": "integer",
@@ -9101,6 +10370,12 @@
       "description": "删除现金流量表（DELETE /api/finance/report/cash-flow/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "现金流量表ID"
@@ -9111,6 +10386,12 @@
       "tool_name": "finance_report_profit_create",
       "description": "创建利润表（POST /api/finance/report/profit/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_period",
           "type": "string",
@@ -9208,6 +10489,12 @@
       "description": "获取利润表列表（GET /api/finance/report/profit/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -9239,6 +10526,12 @@
       "description": "获取利润表详情（GET /api/finance/report/profit/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "利润表ID"
@@ -9249,6 +10542,12 @@
       "tool_name": "finance_report_profit_update",
       "description": "更新利润表（PUT /api/finance/report/profit/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_id",
           "type": "integer",
@@ -9351,6 +10650,12 @@
       "description": "删除利润表（DELETE /api/finance/report/profit/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "利润表ID"
@@ -9361,6 +10666,12 @@
       "tool_name": "finance_report_balance_create",
       "description": "创建资产负债表（POST /api/finance/report/balance/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_period",
           "type": "string",
@@ -9443,6 +10754,12 @@
       "description": "获取资产负债表列表（GET /api/finance/report/balance/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -9474,6 +10791,12 @@
       "description": "获取资产负债表详情（GET /api/finance/report/balance/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "资产负债表ID"
@@ -9484,6 +10807,12 @@
       "tool_name": "finance_report_balance_update",
       "description": "更新资产负债表（PUT /api/finance/report/balance/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_id",
           "type": "integer",
@@ -9571,6 +10900,12 @@
       "description": "删除资产负债表（DELETE /api/finance/report/balance/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "资产负债表ID"
@@ -9581,6 +10916,12 @@
       "tool_name": "finance_report_financial_create",
       "description": "创建财务报表主表（POST /api/finance/report/financial/create）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_name",
           "type": "string",
@@ -9643,6 +10984,12 @@
       "description": "获取财务报表主表列表（GET /api/finance/report/financial/list）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "page",
           "type": "integer",
           "description": "页码，默认1（可选）"
@@ -9674,6 +11021,12 @@
       "description": "获取财务报表主表详情（GET /api/finance/report/financial/{id}）",
       "parameters": [
         {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
+        {
           "name": "report_id",
           "type": "integer",
           "description": "财务报表主表ID"
@@ -9684,6 +11037,12 @@
       "tool_name": "finance_report_financial_update",
       "description": "更新财务报表主表（PUT /api/finance/report/financial/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_id",
           "type": "integer",
@@ -9755,6 +11114,12 @@
       "tool_name": "finance_report_financial_delete",
       "description": "删除财务报表主表（DELETE /api/finance/report/financial/{id}）",
       "parameters": [
+        {
+          "name": "access_token",
+          "type": "string",
+          "description": "登录后获取的访问令牌（无状态模式下每次调用需携带，由飞书 Agent 从登录响应 data.access_token 中保存）",
+          "required": true
+        },
         {
           "name": "report_id",
           "type": "integer",
