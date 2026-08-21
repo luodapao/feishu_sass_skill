@@ -1,0 +1,15 @@
+[Unit]
+Description=MCP SaaS Finance Server (HTTP SSE)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/feishu_sass_skill
+Environment=SAAS_SKILL_ROOT=/opt/feishu_sass_skill
+Environment=MCP_PORT=8083
+ExecStart=/opt/feishu_sass_skill/.venv/bin/python /opt/feishu_sass_skill/mcp_finance_http.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

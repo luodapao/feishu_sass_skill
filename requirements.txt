@@ -1,4 +1,8 @@
-# MCP 适配器依赖
-mcp>=1.2.0
+# MCP 核心库（含 Streamable HTTP / SSE 模式）
+mcp[http]>=1.2.0
+
+# HTTP SSE 服务器（ASGI 运行器）
+uvicorn[standard]>=0.23.2
+
 # 运行时依赖（auth_core / 业务模块已使用）
 requests>=2.28.0
