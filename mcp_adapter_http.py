@@ -199,6 +199,12 @@ def run_http_server(
     # 获取 Starlette ASGI app（Streamable HTTP 模式）
     app = mcp.streamable_http_app()
 
+    # 放行 Host 头：Starlette 默认只允许 localhost，公网/内网 IP 访问会被拒。
+    # 这里包一层 TrustedHostMiddleware 允许任意 Host，避免飞书 Agent 配置
+    # http://公网IP:8081/mcp 时被 400 Bad Request 拒绝。
+    from starlette.middleware.trustedhost import TrustedHostMiddleware
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+
     # 用 uvicorn 启动
     try:
         import uvicorn
